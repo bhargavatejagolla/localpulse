@@ -1,0 +1,157 @@
+import React, { useState } from "react";
+import {
+  View,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Alert,
+} from "react-native";
+import { TextInput, Button, Text, Surface, useTheme } from "react-native-paper";
+import { useAuth } from "../hooks/useAuth";
+
+export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const { signIn } = useAuth();
+  const theme = useTheme();
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please fill all fields");
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await signIn(email.trim(), password);
+    setLoading(false);
+
+    if (error) {
+      Alert.alert("Login Failed", error);
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <Text variant="displaySmall" style={styles.title}>
+            LocalPulse
+          </Text>
+          <Text variant="bodyLarge" style={styles.subtitle}>
+            Your neighbourhood, connected.
+          </Text>
+        </View>
+
+        <Surface style={styles.form} elevation={2}>
+          <Text variant="headlineSmall" style={styles.formTitle}>
+            Welcome Back
+          </Text>
+
+          <TextInput
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            mode="outlined"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            style={styles.input}
+            left={<TextInput.Icon icon="email" />}
+          />
+
+          <TextInput
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            mode="outlined"
+            secureTextEntry={!showPassword}
+            style={styles.input}
+            left={<TextInput.Icon icon="lock" />}
+            right={
+              <TextInput.Icon
+                icon={showPassword ? "eye-off" : "eye"}
+                onPress={() => setShowPassword(!showPassword)}
+              />
+            }
+          />
+
+          <Button
+            mode="contained"
+            onPress={handleLogin}
+            loading={loading}
+            style={styles.button}
+            contentStyle={styles.buttonContent}
+          >
+            Sign In
+          </Button>
+
+          <View style={styles.signupRow}>
+            <Text variant="bodyMedium">Don't have an account? </Text>
+            <Button
+              mode="text"
+              onPress={() => navigation.navigate("Signup")}
+              compact
+            >
+              Sign Up
+            </Button>
+          </View>
+        </Surface>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#1B5E20",
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: 20,
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 30,
+  },
+  title: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
+  },
+  subtitle: {
+    color: "#C8E6C9",
+    marginTop: 8,
+  },
+  form: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 24,
+  },
+  formTitle: {
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#1B5E20",
+  },
+  input: {
+    marginBottom: 16,
+  },
+  button: {
+    marginTop: 8,
+    backgroundColor: "#1B5E20",
+  },
+  buttonContent: {
+    paddingVertical: 6,
+  },
+  signupRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 16,
+  },
+});
