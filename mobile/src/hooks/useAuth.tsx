@@ -2,7 +2,9 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import { Profile, UserRole } from "../types";
-import { getProfile, createProfile } from "../services/database";
+import { getProfile, createProfile, savePushToken } from "../services/database";
+import * as Notifications from "expo-notifications";
+import { Platform } from "react-native";
 
 interface AuthContextType {
   user: User | null;
@@ -22,6 +24,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const useAuth = () => useContext(AuthContext);
+
+import { registerForPushNotifications } from '../services/notificationService';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -62,8 +66,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+
       if (session?.user) {
         getProfile(session.user.id).then(setProfile).catch(console.log);
+
+        // Register for push notifications on login
+        registerForPushNotifications(session.user.id).catch(console.log);
       } else {
         setProfile(null);
       }
@@ -91,6 +99,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (error) return { error: error.message };
       if (data.user) {
         await createProfile(data.user.id, fullName);
+        // Register for push notifications after signup
+        await registerForPushNotifications(data.user.id).catch(console.log);
       }
       return {};
     } catch (error: any) {
@@ -99,6 +109,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const signOut = async () => {
+    try {
+      // Optionally remove push token on signout
+      if (user) {
+        await savePushToken(user.id, ""); // Clear the token
+      }
+    } catch (error) {
+      console.error("Error clearing push token:", error);
+    }
+
     await supabase.auth.signOut();
     setProfile(null);
   };

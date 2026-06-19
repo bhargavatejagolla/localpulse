@@ -1,19 +1,62 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+
 import { FeedScreen } from "../screens/FeedScreen";
 import { ReportScreen } from "../screens/ReportScreen";
 import { EventsScreen } from "../screens/EventsScreen";
+import { DirectoryScreen } from "../screens/DirectoryScreen";
 import { ProfileScreen } from "../screens/ProfileScreen";
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { IssueDetailScreen } from "../screens/IssueDetailScreen";
+import { AuthorityScreen } from '../screens/AuthorityScreen';
+import { AnalyticsScreen } from '../screens/AnalyticsScreen';
+import { useAuth } from '../hooks/useAuth';
 
 const Tab = createBottomTabNavigator();
+const FeedStack = createNativeStackNavigator<any>();
+
+// Feed Stack Navigator
+const FeedStackScreen = () => {
+  return (
+    <FeedStack.Navigator>
+      <FeedStack.Screen
+        name="FeedList"
+        component={FeedScreen}
+        options={{
+          title: "Community Feed",
+          headerStyle: {
+            backgroundColor: "#1B5E20",
+          },
+          headerTintColor: "#FFFFFF",
+        }}
+      />
+
+      <FeedStack.Screen
+        name="IssueDetail"
+        component={IssueDetailScreen}
+        options={{
+          title: "Issue Details",
+          headerStyle: {
+            backgroundColor: "#1B5E20",
+          },
+          headerTintColor: "#FFFFFF",
+        }}
+      />
+    </FeedStack.Navigator>
+  );
+};
 
 export const MainTabs: React.FC = () => {
+  const { profile } = useAuth();
+  const isAuthority = profile?.role === 'authority' || profile?.role === 'admin';
+
   return (
     <Tab.Navigator
       screenOptions={{
         tabBarActiveTintColor: "#1B5E20",
         tabBarInactiveTintColor: "#757575",
+
         tabBarStyle: {
           backgroundColor: "#FFFFFF",
           borderTopWidth: 1,
@@ -22,14 +65,18 @@ export const MainTabs: React.FC = () => {
           paddingBottom: 8,
           paddingTop: 4,
         },
+
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: "500",
         },
+
         headerStyle: {
           backgroundColor: "#1B5E20",
         },
+
         headerTintColor: "#FFFFFF",
+
         headerTitleStyle: {
           fontWeight: "600",
         },
@@ -37,8 +84,10 @@ export const MainTabs: React.FC = () => {
     >
       <Tab.Screen
         name="Feed"
-        component={FeedScreen}
+        component={FeedStackScreen}
         options={{
+          headerShown: false,
+          title: "Feed",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="newspaper-variant"
@@ -46,13 +95,14 @@ export const MainTabs: React.FC = () => {
               size={size}
             />
           ),
-          title: "Community Feed",
         }}
       />
+
       <Tab.Screen
         name="Report"
         component={ReportScreen}
         options={{
+          title: "Report",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="plus-circle"
@@ -60,13 +110,14 @@ export const MainTabs: React.FC = () => {
               size={size}
             />
           ),
-          title: "Report Issue",
         }}
       />
+
       <Tab.Screen
         name="Events"
         component={EventsScreen}
         options={{
+          title: "Events",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="calendar-star"
@@ -74,17 +125,50 @@ export const MainTabs: React.FC = () => {
               size={size}
             />
           ),
-          title: "Events",
         }}
       />
+
+      <Tab.Screen
+        name="Directory"
+        component={DirectoryScreen}
+        options={{
+          title: "Directory",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="tools" color={color} size={size} />
+          ),
+        }}
+      />
+
+      {isAuthority && (
+        <Tab.Screen name="Authority" component={AuthorityScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="shield-check" color={color} size={size} />
+            ),
+            title: 'Manage',
+          }}
+        />
+      )}
+
+      <Tab.Screen
+        name="Analytics"
+        component={AnalyticsScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="chart-bar" color={color} size={size} />
+          ),
+          title: 'Stats',
+        }}
+      />
+
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
         options={{
+          title: "Profile",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="account" color={color} size={size} />
           ),
-          title: "Profile",
         }}
       />
     </Tab.Navigator>

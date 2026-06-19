@@ -11,6 +11,7 @@ import { LocationProvider } from "./src/hooks/useLocationContext";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { SignupScreen } from "./src/screens/SignupScreen";
 import { MainTabs } from "./src/navigation/MainTabs";
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 const Stack = createNativeStackNavigator();
 
@@ -61,16 +62,18 @@ const AppNavigator = () => {
 
 export default function App() {
   return (
-    <PaperProvider theme={theme}>
-      <AuthProvider>
-        <LocationProvider>
-          <NavigationContainer>
-            <AppNavigator />
-          </NavigationContainer>
-        </LocationProvider>
-      </AuthProvider>
+    <ErrorBoundary>
+      <PaperProvider theme={theme}>
+        <AuthProvider>
+          <LocationProvider>
+            <NavigationContainer>
+              <AppNavigator />
+            </NavigationContainer>
+          </LocationProvider>
+        </AuthProvider>
 
-      <StatusBar style="light" />
-    </PaperProvider>
+        <StatusBar style="light" />
+      </PaperProvider>
+    </ErrorBoundary>
   );
 }
