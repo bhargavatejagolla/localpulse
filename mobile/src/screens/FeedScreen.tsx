@@ -19,7 +19,7 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [upvotingIds, setUpvotingIds] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'map' | 'heatmap'>('list');
   const [sortBy, setSortBy] = useState<'recent' | 'top_voted'>('recent');
 
   const fetchIssues = useCallback(async () => {
