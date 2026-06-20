@@ -48,7 +48,8 @@
           "cameraPermission": "Allow LocalPulse to use your camera to capture issues."
         }
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "expo-font"
     ],
     "extra": {
       "eas": {
