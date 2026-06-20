@@ -15,7 +15,7 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
   const theme = useTheme();
 
   const handleLogin = async () => {
@@ -88,6 +88,23 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             contentStyle={styles.buttonContent}
           >
             Sign In
+          </Button>
+
+          <Button
+            mode="outlined"
+            icon="google"
+            onPress={async () => {
+              setLoading(true);
+              const { error } = await signInWithGoogle();
+              setLoading(false);
+              if (error) Alert.alert("Google Sign In Failed", error);
+            }}
+            loading={loading}
+            style={{ marginTop: 12, borderColor: "#1B5E20", backgroundColor: "#FFFFFF" }}
+            textColor="#1B5E20"
+            contentStyle={styles.buttonContent}
+          >
+            Sign in with Google
           </Button>
 
           <View style={styles.signupRow}>

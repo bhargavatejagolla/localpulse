@@ -17,7 +17,7 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
 
   const handleSignup = async () => {
     if (!fullName || !email || !password || !confirmPassword) {
@@ -124,6 +124,23 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             contentStyle={styles.buttonContent}
           >
             Create Account
+          </Button>
+
+          <Button
+            mode="outlined"
+            icon="google"
+            onPress={async () => {
+              setLoading(true);
+              const { error } = await signInWithGoogle();
+              setLoading(false);
+              if (error) Alert.alert("Google Sign In Failed", error);
+            }}
+            loading={loading}
+            style={{ marginTop: 12, borderColor: "#1B5E20", backgroundColor: "#FFFFFF" }}
+            textColor="#1B5E20"
+            contentStyle={styles.buttonContent}
+          >
+            Sign up with Google
           </Button>
 
           <View style={styles.loginRow}>

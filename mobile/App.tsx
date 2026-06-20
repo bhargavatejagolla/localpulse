@@ -1,6 +1,7 @@
 import React from "react";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { PaperProvider, MD3LightTheme } from "react-native-paper";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -62,18 +63,20 @@ const AppNavigator = () => {
 
 export default function App() {
   return (
-    <ErrorBoundary>
-      <PaperProvider theme={theme}>
-        <AuthProvider>
-          <LocationProvider>
-            <NavigationContainer>
-              <AppNavigator />
-            </NavigationContainer>
-          </LocationProvider>
-        </AuthProvider>
+    <SafeAreaProvider>
+      <ErrorBoundary>
+        <PaperProvider theme={theme}>
+          <AuthProvider>
+            <LocationProvider>
+              <NavigationContainer>
+                <AppNavigator />
+              </NavigationContainer>
+            </LocationProvider>
+          </AuthProvider>
 
-        <StatusBar style="light" />
-      </PaperProvider>
-    </ErrorBoundary>
+          <StatusBar style="light" />
+        </PaperProvider>
+      </ErrorBoundary>
+    </SafeAreaProvider>
   );
 }

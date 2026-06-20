@@ -11,7 +11,8 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://mcavxalhllcdemkjjnua.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jYXZ4YWxobGxjZGVta2pqbnVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NjA0MDEsImV4cCI6MjA5NzQzNjQwMX0.rS-86pL1qZEKG_a1qQMPDVLgIIKOfT-rS0nz6pUedUE",
-        "EXPO_PUBLIC_GROQ_API_KEY": "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"
+        "EXPO_PUBLIC_GROQ_API_KEY": "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",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "418514960421-ckoobi4ouk1cd67hco7eonka5d53l1h6.apps.googleusercontent.com"
       }
     },
     "production": {

@@ -1,4 +1,5 @@
-
+import * as FileSystem from 'expo-file-system';
+import { decode } from 'base64-arraybuffer';
 import { supabase } from "../lib/supabase";
 import {
   Issue,
@@ -10,6 +11,7 @@ import {
   Coordinates,
   Notification,
 } from "../types";
+import { sendPushNotification } from './notificationService';
 
 // ==================== PROFILES ====================
 
@@ -175,18 +177,17 @@ export const uploadIssueImage = async (
   fileName: string,
 ): Promise<string> => {
   try {
-    const response = await fetch(uri);
-    const blob = await response.blob();
-
     const fileExt = fileName.split(".").pop() || "jpg";
-
     const filePath = `issues/${Date.now()}-${Math.random()
       .toString(36)
       .slice(2)}.${fileExt}`;
 
+    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
+    const arrayBuffer = decode(base64);
+
     const { error: uploadError } = await supabase.storage
       .from("issue-images")
-      .upload(filePath, blob, {
+      .upload(filePath, arrayBuffer, {
         contentType: `image/${fileExt}`,
         upsert: false,
       });
@@ -334,6 +335,24 @@ export const updateIssueStatus = async (
   if (historyError) {
     console.error("Error logging status change:", historyError);
     // Don't throw here - the status update succeeded
+  }
+
+  // Fetch the issue to get the user_id and title
+  const { data: issueData } = await supabase.from("issues").select("user_id, title").eq("id", issueId).single();
+  
+  if (issueData?.user_id) {
+    // Get the user's push token
+    const { data: profileData } = await supabase.from("profiles").select("expo_push_token").eq("user_id", issueData.user_id).single();
+    
+    if (profileData?.expo_push_token) {
+      // Send real push notification
+      await sendPushNotification(
+        profileData.expo_push_token,
+        "Issue Status Updated",
+        `Your reported issue "${issueData.title}" is now ${newStatus}.`,
+        { issueId }
+      );
+    }
   }
 };
 

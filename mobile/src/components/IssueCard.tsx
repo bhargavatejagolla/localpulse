@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, Image, TouchableOpacity, Animated } from 'react-native';
 import { Text, Surface, Chip, IconButton } from 'react-native-paper';
 import { Issue, IssueCategory, IssueSeverity } from '../types';
 
@@ -41,10 +41,28 @@ export const IssueCard: React.FC<IssueCardProps> = ({
   isUpvoting,
 }) => {
   const timeAgo = getTimeAgo(issue.created_at);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      })
+    ]).start();
+  }, []);
 
   return (
-    <Surface style={styles.card} elevation={1}>
-      <TouchableOpacity onPress={() => onPress(issue)} activeOpacity={0.7}>
+    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY }] }}>
+      <Surface style={styles.card} elevation={1}>
+        <TouchableOpacity onPress={() => onPress(issue)} activeOpacity={0.7}>
         {/* Image */}
         {issue.image_url && (
           <Image source={{ uri: issue.image_url }} style={styles.image} />
@@ -148,6 +166,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
         </View>
       </TouchableOpacity>
     </Surface>
+    </Animated.View>
   );
 };
 
@@ -170,13 +189,20 @@ const getTimeAgo = (dateString: string): string => {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginBottom: 12,
+    borderRadius: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
     overflow: 'hidden',
   },
   image: {
     width: '100%',
-    height: 180,
+    height: 200,
     resizeMode: 'cover',
   },
   content: {

@@ -5,6 +5,10 @@ import { Profile, UserRole } from "../types";
 import { getProfile, createProfile, savePushToken } from "../services/database";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import {
+  GoogleSignin,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 
 interface AuthContextType {
   user: User | null;
@@ -19,6 +23,7 @@ interface AuthContextType {
   ) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  signInWithGoogle: () => Promise<{ error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -46,6 +51,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    });
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -82,11 +91,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error) return { error: error.message };
+      
+      if (data.user) {
+        try {
+          await getProfile(data.user.id);
+        } catch (e) {
+          // Profile is missing (maybe failed during signup), create a fallback profile
+          await createProfile(data.user.id, email.split('@')[0]);
+        }
+      }
       return {};
     } catch (error: any) {
       return { error: error.message };
@@ -98,13 +116,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) return { error: error.message };
       if (data.user) {
-        await createProfile(data.user.id, fullName);
-        // Register for push notifications after signup
-        await registerForPushNotifications(data.user.id).catch(console.log);
+        try {
+          await createProfile(data.user.id, fullName);
+          await registerForPushNotifications(data.user.id).catch(console.log);
+        } catch (profileError: any) {
+          // If foreign key constraint fails, Supabase returned a fake user because the email is already registered
+          if (profileError.message?.includes('foreign key constraint') || profileError.message?.includes('fkey')) {
+            return { error: 'This email is already registered. Please go back and Sign In.' };
+          }
+          return { error: profileError.message };
+        }
       }
       return {};
     } catch (error: any) {
       return { error: error.message };
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn() as any;
+      const idToken = userInfo.data?.idToken || userInfo.idToken;
+      
+      if (idToken) {
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: idToken,
+        });
+        if (error) return { error: error.message };
+
+        // Ensure profile is created if it doesn't exist
+        if (data.user) {
+          try {
+            await getProfile(data.user.id);
+          } catch (e) {
+            // Profile doesn't exist, create it using Google name
+            const name = userInfo.data?.user?.name || userInfo.user?.name || 'Google User';
+            await createProfile(data.user.id, name);
+            await registerForPushNotifications(data.user.id).catch(console.log);
+          }
+        }
+        return {};
+      } else {
+        return { error: 'No ID token present!' };
+      }
+    } catch (error: any) {
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        return { error: 'Sign in cancelled' };
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        return { error: 'Sign in already in progress' };
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        return { error: 'Play services not available' };
+      } else {
+        return { error: error.message };
+      }
     }
   };
 
@@ -133,6 +199,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         signUp,
         signOut,
         refreshProfile,
+        signInWithGoogle,
       }}
     >
       {children}

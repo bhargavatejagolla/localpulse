@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, ActivityIndicator, Button, SegmentedButtons } from 'react-native-paper';
+import { Text, ActivityIndicator, Button, SegmentedButtons, Surface } from 'react-native-paper';
 import MapView, { Marker, Circle, PROVIDER_DEFAULT } from 'react-native-maps';
 import { useLocationContext } from '../hooks/useLocationContext';
 import { useAuth } from '../hooks/useAuth';
@@ -19,6 +19,7 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [upvotingIds, setUpvotingIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [sortBy, setSortBy] = useState<'recent' | 'top_voted'>('recent');
 
   const fetchIssues = useCallback(async () => {
     if (!location) return;
@@ -29,7 +30,15 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         location.longitude,
         radiusInMeters
       );
-      setIssues(data || []);
+      
+      let sortedData = data || [];
+      if (sortBy === 'top_voted') {
+        sortedData.sort((a, b) => (b.upvote_count || 0) - (a.upvote_count || 0));
+      } else {
+        sortedData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      }
+      
+      setIssues(sortedData);
     } catch (error) {
       console.error('Fetch issues error:', error);
     } finally {
@@ -58,7 +67,7 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [location, radiusInMeters, fetchIssues]);
+  }, [location, radiusInMeters, sortBy, fetchIssues]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -116,6 +125,15 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       )}
 
       <View style={styles.toggleContainer}>
+        <SegmentedButtons
+          value={sortBy}
+          onValueChange={(value) => { setSortBy(value as 'recent' | 'top_voted'); fetchIssues(); }}
+          style={{ marginBottom: 10 }}
+          buttons={[
+            { value: 'recent', label: 'Recent', icon: 'clock-outline' },
+            { value: 'top_voted', label: 'Top Voted', icon: 'arrow-up-bold' },
+          ]}
+        />
         <SegmentedButtons
           value={viewMode}
           onValueChange={(value) => setViewMode(value as 'list' | 'map')}
@@ -201,15 +219,18 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             />
           }
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text variant="displaySmall">📍</Text>
-              <Text variant="titleMedium" style={styles.emptyTitle}>
-                No Issues Nearby
+            <Surface style={[styles.emptyState, { borderRadius: 16, backgroundColor: '#FFFFFF', elevation: 2, margin: 16 }]} elevation={2}>
+              <Text variant="displayMedium">✨</Text>
+              <Text variant="titleMedium" style={[styles.emptyTitle, { color: '#1B5E20', fontWeight: 'bold' }]}>
+                You're in a Safe Zone!
               </Text>
               <Text variant="bodyMedium" style={styles.emptyText}>
-                Be the first to report a civic problem in your area!
+                No civic issues reported within this radius. Found something? Be the first to report it and help your community.
               </Text>
-            </View>
+              <Button mode="contained" onPress={() => navigation.navigate('Report')} style={{ marginTop: 20, backgroundColor: '#1B5E20' }}>
+                Report an Issue
+              </Button>
+            </Surface>
           }
           showsVerticalScrollIndicator={false}
         />

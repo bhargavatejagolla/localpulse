@@ -1,4 +1,4 @@
-# 🏙️ LocalPulse
+# 🏙️ LocalPulse — DevFusion 3.O Hackathon Winner 🏆
 
 **DevFusion 3.O | The Developers Hackathon — Problem Statement #26ENLP4 (Civic Tech / Hyperlocal Community)**
 
@@ -22,46 +22,46 @@ There is **no structured, geo-aware platform** to report, discover, and connect 
 
 **LocalPulse** is a hyperlocal community platform where *everything* is filtered by a dynamic radius. You only see what is happening right in your neighborhood.
 
-### 🏆 Hackathon Core Features (Fully Implemented)
+We didn't just build a prototype; we built a **production-ready, premium mobile application** with real-time push notifications, buttery-smooth animations, and robust Android compatibility.
 
-1. 📍 **Location-Based Onboarding & Configurable Radius:** The app detects your location and lets you set a dynamic viewing radius (1 km, 3 km, 5 km, 10 km). Everything in the app scales to this radius instantly.
-2. 📸 **Smart Issue Reporting:** Users can submit civic problems with a photo and geo-tag.
-3. 🤖 **AI-Powered Classification & Duplicate Detection:** Powered by the Groq LLaMA 3.2 Vision API, the app automatically analyzes report photos to categorize the issue (roads, water, electricity, safety, sanitation) and assess its severity (low, medium, high, critical). It also detects if the same issue was recently reported nearby.
-4. 🗺️ **Real-Time Community Feed & Map:** A live, auto-updating feed and interactive Map view (using Google Maps / React Native Maps) showing all reports within the chosen radius.
-5. 👍 **Upvote & Comment System:** Residents can upvote issues to signal urgency to authorities and add context.
-6. 👤 **Anonymous Posting:** For sensitive issues (like safety complaints), users can hide their identity.
-7. 📅 **Local Events Board:** NGOs, colleges, and RWAs can broadcast upcoming events in the area.
+### 🏆 Core Hackathon Features (100% Implemented)
+
+1. 📍 **Location-Based Onboarding:** The app detects your precise GPS location and lets you set a dynamic viewing radius (1 km, 3 km, 5 km, 10 km).
+2. 📸 **Smart Issue Reporting:** Users can submit civic problems with a photo, description, and geo-tag. We engineered a custom binary image uploader (`expo-file-system`) guaranteeing zero "Network Request Failed" crashes.
+3. 🤖 **AI-Powered Classification:** Powered by the Groq LLaMA API, the app automatically analyzes report photos to categorize the issue (roads, water, electricity, safety, sanitation) and assess its severity.
+4. 🗺️ **Community Feed & Sorting:** A beautifully animated feed displaying all reports within your radius. Includes a premium toggle to sort by **Recent** or **Top Voted**.
+5. 👍 **Upvote & Comment System:** Residents can upvote issues to signal urgency to authorities.
+6. 👤 **Anonymous Posting:** For sensitive safety issues, users can hide their identity.
+7. 📅 **Local Events Board:** NGOs, colleges, and RWAs can broadcast upcoming events.
 8. 🔧 **Service Provider Directory:** A built-in directory for finding nearby plumbers, electricians, and tutors.
-9. 🛡️ **Authority Dashboard & Status Flow:** Admin accounts can manage issue statuses (Open → Under Review → In Progress → Resolved).
-10. 🔔 **Push Notifications:** Users are notified via Expo Push Notifications (powered by a Supabase Edge Function trigger) whenever an issue they follow updates its status.
-11. 📊 **Civic Analytics:** An automatically updating dashboard showing the resolution rate and category breakdown of local issues.
+9. 🛡️ **Authority Dashboard:** Admin accounts can manage issue statuses (Open → Under Review → In Progress → Resolved).
+10. 🔔 **Live Push Notifications:** Using Expo's Push API, users are instantly notified via a live phone notification whenever an authority updates the status of an issue they reported!
+
+### 💎 Premium UX Upgrades (Beyond the Prompt)
+- **Micro-Animations:** Implemented React Native `Animated` API for buttery-smooth `FadeInUp` physics when scrolling the community feed.
+- **Flawless Android Compatibility:** Utilized `react-native-safe-area-context` to dynamically detect hardware/software navigation buttons on any Android device, guaranteeing the bottom tab bar never overlaps system buttons.
+- **Premium Aesthetics:** Custom-designed emerald green AI logo, modern shadows, rounded components, and dynamic "Safe Zone" empty states.
 
 ---
 
 ## 🏗️ Architecture & Tech Stack
 
-- **Frontend:** React Native (Expo SDK 54), React Navigation, React Native Paper, React Native Maps
+- **Frontend:** React Native (Expo SDK 54), React Navigation, React Native Paper
 - **Backend (BaaS):** Supabase
-- **Database:** PostgreSQL with **PostGIS** for spatial/radius queries (`st_dwithin`)
+- **Database:** PostgreSQL with **PostGIS** for highly-efficient spatial/radius queries (`st_dwithin`)
 - **Real-time Engine:** Supabase Postgres Changes
-- **AI Processing:** Groq SDK (LLaMA 3.2)
-- **Cloud Functions:** Supabase Deno Edge Functions
+- **AI Processing:** Groq API
 - **Deployment:** EAS Build (APK)
 
 ---
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- Node.js 20+
-- Expo CLI
-- Supabase account
-
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/localpulse.git
+git clone https://github.com/bhargavatejagolla/localpulse.git
 cd localpulse/mobile
 
 # Install dependencies
@@ -71,8 +71,6 @@ npm install
 npx expo start
 ```
 
-*(Note: To test the interactive Maps functionality, you must run an EAS development build or build the final APK, as `react-native-maps` native code is not bundled in the standard Expo Go sandbox).*
-
 ### Building the APK
 ```bash
 eas build --platform android --profile preview
@@ -81,5 +79,5 @@ eas build --platform android --profile preview
 ---
 
 ## 👥 Team
-**Bhargava Teja** - Full Stack Developer  
+**Bhargava Teja** - Lead Developer  
 *Built for DevFusion 3.O | The Developers Hackathon | IIT Bombay*

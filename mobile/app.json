@@ -47,7 +47,8 @@
           "photosPermission": "Allow LocalPulse to access your photos to report issues.",
           "cameraPermission": "Allow LocalPulse to use your camera to capture issues."
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "extra": {
       "eas": {

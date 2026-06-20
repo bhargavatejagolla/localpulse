@@ -2,6 +2,7 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { FeedScreen } from "../screens/FeedScreen";
 import { ReportScreen } from "../screens/ReportScreen";
@@ -49,6 +50,7 @@ const FeedStackScreen = () => {
 
 export const MainTabs: React.FC = () => {
   const { profile } = useAuth();
+  const insets = useSafeAreaInsets();
   const isAuthority = profile?.role === 'authority' || profile?.role === 'admin';
 
   return (
@@ -61,8 +63,8 @@ export const MainTabs: React.FC = () => {
           backgroundColor: "#FFFFFF",
           borderTopWidth: 1,
           borderTopColor: "#E0E0E0",
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 4,
         },
 
