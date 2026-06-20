@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, ActivityIndicator, Button, SegmentedButtons, Surface } from 'react-native-paper';
+import { View, StyleSheet, FlatList, RefreshControl, ScrollView } from 'react-native';
+import { Text, ActivityIndicator, Button, SegmentedButtons, Surface, Chip } from 'react-native-paper';
 import MapView, { Marker, Circle, PROVIDER_DEFAULT } from 'react-native-maps';
 import { useLocationContext } from '../hooks/useLocationContext';
 import { useAuth } from '../hooks/useAuth';
@@ -21,6 +21,7 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [upvotingIds, setUpvotingIds] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'list' | 'map' | 'heatmap'>('list');
   const [sortBy, setSortBy] = useState<'recent' | 'top_voted'>('recent');
+  const [quickFilter, setQuickFilter] = useState<string>('all');
 
   const fetchIssues = useCallback(async () => {
     if (!location) return;
@@ -147,6 +148,17 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         />
       </View>
 
+      <View style={styles.quickFiltersContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickFilters}>
+          <Chip style={styles.filterChip} selected={quickFilter === 'all'} onPress={() => setQuickFilter('all')}>All</Chip>
+          <Chip style={styles.filterChip} selected={quickFilter === 'roads'} onPress={() => setQuickFilter('roads')}>🛣️ Roads</Chip>
+          <Chip style={styles.filterChip} selected={quickFilter === 'water'} onPress={() => setQuickFilter('water')}>💧 Water</Chip>
+          <Chip style={styles.filterChip} selected={quickFilter === 'electricity'} onPress={() => setQuickFilter('electricity')}>⚡ Electric</Chip>
+          <Chip style={styles.filterChip} selected={quickFilter === 'safety'} onPress={() => setQuickFilter('safety')}>🛡️ Safety</Chip>
+          <Chip style={styles.filterChip} selected={quickFilter === 'sanitation'} onPress={() => setQuickFilter('sanitation')}>🧹 Sanitation</Chip>
+        </ScrollView>
+      </View>
+
       {(viewMode === 'map' || viewMode === 'heatmap') && location ? (
         <View style={styles.mapContainer}>
           <MapView
@@ -232,7 +244,7 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         </View>
       ) : (
         <FlatList
-          data={issues}
+          data={issues.filter(i => quickFilter === 'all' || i.category === quickFilter)}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <IssueCard
@@ -285,7 +297,17 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: '#757575',
-    marginTop: 12,
+    marginBottom: 16,
+  },
+  quickFiltersContainer: {
+    marginBottom: 12,
+  },
+  quickFilters: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  filterChip: {
+    backgroundColor: '#F5F5F5',
   },
   errorBanner: {
     backgroundColor: '#FFF3E0',

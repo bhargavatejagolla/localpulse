@@ -155,7 +155,7 @@ export const EventsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               <Chip icon="calendar" style={styles.dateChip} textStyle={styles.dateChipText}>
                 {formatDate(item.event_date)}
               </Chip>
-              {user && item.created_by === user.id && (
+              {user && item.user_id === user.id && (
                 <IconButton
                   icon="delete"
                   iconColor="#D32F2F"

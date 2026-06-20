@@ -110,6 +110,15 @@ export const IssueCard: React.FC<IssueCardProps> = ({
                 {issue.status}
               </Text>
             </View>
+            {issue.upvote_count >= 5 && (
+              <Chip
+                icon="check-decagram"
+                style={styles.verifiedBadge}
+                textStyle={styles.verifiedText}
+              >
+                Community Verified
+              </Chip>
+            )}
           </View>
 
           {/* Title */}
@@ -236,6 +245,15 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 11,
     fontWeight: '600',
+  },
+  verifiedBadge: {
+    backgroundColor: '#E8F5E9',
+    height: 28,
+  },
+  verifiedText: {
+    color: '#2E7D32',
+    fontSize: 11,
+    fontWeight: '700',
   },
   title: {
     color: '#212121',

@@ -6,6 +6,8 @@ import {
   Image,
   Alert,
   RefreshControl,
+  TouchableOpacity,
+  Modal,
 } from 'react-native';
 import {
   Text,
@@ -17,6 +19,7 @@ import {
   ActivityIndicator,
   Divider,
 } from 'react-native-paper';
+import ImageViewer from 'react-native-image-zoom-viewer';
 import { Issue, Comment, IssueCategory, IssueSeverity } from '../types';
 import { getIssueById, toggleUpvote } from '../services/database';
 import { supabase } from '../lib/supabase';
@@ -62,6 +65,7 @@ export const IssueDetailScreen = ({ route, navigation }: any) => {
   const [upvoteCount, setUpvoteCount] = useState(0);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [upvoting, setUpvoting] = useState(false);
+  const [isZoomVisible, setIsZoomVisible] = useState(false);
 
   const fetchIssue = useCallback(async () => {
     if (!issueId) return;
@@ -230,7 +234,9 @@ export const IssueDetailScreen = ({ route, navigation }: any) => {
       >
         {/* Issue Image */}
         {issue.image_url && (
-          <Image source={{ uri: issue.image_url }} style={styles.issueImage} />
+          <TouchableOpacity activeOpacity={0.9} onPress={() => setIsZoomVisible(true)}>
+            <Image source={{ uri: issue.image_url }} style={styles.issueImage} />
+          </TouchableOpacity>
         )}
 
         {/* Issue Details */}
@@ -330,7 +336,29 @@ export const IssueDetailScreen = ({ route, navigation }: any) => {
             ))
           )}
         </Surface>
+        <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Image Zoom Modal */}
+      {issue.image_url && (
+        <Modal visible={isZoomVisible} transparent={true} animationType="fade" onRequestClose={() => setIsZoomVisible(false)}>
+          <View style={{ flex: 1, backgroundColor: '#000000' }}>
+            <IconButton
+              icon="close"
+              iconColor="#FFFFFF"
+              size={28}
+              style={{ position: 'absolute', top: 50, right: 16, zIndex: 10 }}
+              onPress={() => setIsZoomVisible(false)}
+            />
+            <ImageViewer
+              imageUrls={[{ url: issue.image_url }]}
+              enableSwipeDown={true}
+              onSwipeDown={() => setIsZoomVisible(false)}
+              renderIndicator={() => <View />}
+            />
+          </View>
+        </Modal>
+      )}
 
       {/* Comment Input */}
       <Surface style={styles.commentInputContainer} elevation={4}>
