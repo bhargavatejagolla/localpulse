@@ -27,14 +27,13 @@ const CATEGORY_DESCRIPTIONS = {
  * Classify a civic issue image using Groq AI (LLaMA vision model)
  */
 export const classifyIssue = async (
-  imageUrl: string,
+  imageUrl: string | null,
   description: string
 ): Promise<AIClassificationResult> => {
   try {
-    const prompt = `You are a civic issue classifier for Indian cities. Analyze this image and description of a reported civic problem.
+    const prompt = `You are a civic issue classifier for Indian cities. Analyze this reported civic problem.
 
-Image URL: ${imageUrl}
-User Description: "${description}"
+${imageUrl ? `Image URL: ${imageUrl}\n` : ''}User Description: "${description}"
 
 Classify this issue into EXACTLY ONE category and ONE severity level.
 
@@ -61,7 +60,7 @@ Return ONLY a valid JSON object with this exact format, no other text:
           content: prompt,
         },
       ],
-      model: 'llama-3.2-11b-vision-preview',
+      model: imageUrl ? 'llama-3.2-11b-vision-preview' : 'llama-3.1-8b-instant',
       temperature: 0.1,
       max_tokens: 100,
       response_format: { type: 'json_object' },

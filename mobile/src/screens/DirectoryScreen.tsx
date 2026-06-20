@@ -112,7 +112,15 @@ export const DirectoryScreen: React.FC = () => {
       setShowAddModal(false);
       fetchProviders();
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to add provider.');
+      if (error.message?.includes('row-level security') || error.message?.includes('RLS')) {
+        Alert.alert(
+          'Supabase Config Needed', 
+          'You need to allow inserting providers in your Supabase database.\n\n1. Go to Supabase Dashboard > Authentication > Policies\n2. Find the "providers" table\n3. Add a new policy to allow INSERT for authenticated users.',
+          [{ text: 'Got it' }]
+        );
+      } else {
+        Alert.alert('Error', error.message || 'Failed to add provider.');
+      }
     } finally {
       setSubmitting(false);
     }

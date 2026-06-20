@@ -112,7 +112,19 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
     try {
       // Step 1: Upload image
-      const imageUrl = await uploadIssueImage(imageUri, "issue.jpg");
+      let imageUrl: string | null = null;
+      if (imageUri) {
+        try {
+          imageUrl = await uploadIssueImage(imageUri, "issue.jpg");
+        } catch (uploadError: any) {
+          if (uploadError.message?.includes('Bucket') || uploadError.message?.includes('Storage')) {
+            console.log('Skipping image upload due to missing bucket');
+            Alert.alert("Notice", "Image skipped. Please create an 'issue-images' public bucket in your Supabase dashboard.");
+          } else {
+            throw uploadError;
+          }
+        }
+      }
 
       // Step 2: AI Classification
       const classification = await classifyIssue(imageUrl, description);
@@ -144,7 +156,7 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     }
   };
 
-  const submitIssue = async (classification: any, imageUrl: string) => {
+  const submitIssue = async (classification: any, imageUrl: string | null) => {
     try {
       const title = generateTitle(classification.category, description);
 
@@ -251,6 +263,22 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             placeholder="Describe the problem you found..."
             style={styles.textArea}
           />
+          <Button 
+            mode="contained-tonal" 
+            icon="magic-staff" 
+            onPress={async () => {
+              if (!description.trim()) {
+                Alert.alert("Required", "Type a description first!"); return;
+              }
+              setLoading(true);
+              const result = await classifyIssue(null, description);
+              setAiResult(result);
+              setLoading(false);
+            }}
+            style={{ marginTop: 8 }}
+          >
+            AI Auto-Fill Category
+          </Button>
         </Surface>
 
         {/* Anonymous Toggle */}
