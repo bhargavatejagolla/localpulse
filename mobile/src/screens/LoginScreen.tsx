@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -6,6 +6,7 @@ import {
   Platform,
   ScrollView,
   Alert,
+  Animated,
 } from "react-native";
 import { TextInput, Button, Text, Surface, useTheme } from "react-native-paper";
 import { useAuth } from "../hooks/useAuth";
@@ -17,6 +18,25 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [showPassword, setShowPassword] = useState(false);
   const { signIn, signInWithGoogle } = useAuth();
   const theme = useTheme();
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -39,19 +59,20 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
+        <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <Text variant="displaySmall" style={styles.title}>
             LocalPulse
           </Text>
           <Text variant="bodyLarge" style={styles.subtitle}>
             Your neighbourhood, connected.
           </Text>
-        </View>
+        </Animated.View>
 
-        <Surface style={styles.form} elevation={2}>
-          <Text variant="headlineSmall" style={styles.formTitle}>
-            Welcome Back
-          </Text>
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+          <Surface style={styles.form} elevation={2}>
+            <Text variant="headlineSmall" style={styles.formTitle}>
+              Welcome Back
+            </Text>
 
           <TextInput
             label="Email"
@@ -118,6 +139,7 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             </Button>
           </View>
         </Surface>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

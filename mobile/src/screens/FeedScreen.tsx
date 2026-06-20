@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { Text, ActivityIndicator, Button, SegmentedButtons, Surface } from 'react-native-paper';
-import MapView, { Marker, Circle, PROVIDER_DEFAULT } from 'react-native-maps';
+import MapView, { Marker, Circle, Heatmap, PROVIDER_DEFAULT } from 'react-native-maps';
 import { useLocationContext } from '../hooks/useLocationContext';
 import { useAuth } from '../hooks/useAuth';
 import { RadiusPicker } from '../components/RadiusPicker';
 import { IssueCard } from '../components/IssueCard';
+import { SkeletonCard } from '../components/SkeletonCard';
 import { getIssuesWithinRadius, toggleUpvote, hasUserUpvoted } from '../services/database';
 import { supabase } from '../lib/supabase';
 import { Issue } from '../types';
@@ -100,11 +101,12 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   if (locationLoading || loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#1B5E20" />
-        <Text variant="bodyMedium" style={styles.loadingText}>
-          Loading issues...
-        </Text>
+      <View style={styles.container}>
+        <View style={{ padding: 16 }}>
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </View>
       </View>
     );
   }
@@ -136,15 +138,16 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         />
         <SegmentedButtons
           value={viewMode}
-          onValueChange={(value) => setViewMode(value as 'list' | 'map')}
+          onValueChange={(value) => setViewMode(value as 'list' | 'map' | 'heatmap')}
           buttons={[
-            { value: 'list', label: 'List View', icon: 'format-list-bulleted' },
-            { value: 'map', label: 'Map View', icon: 'map' },
+            { value: 'list', label: 'List', icon: 'format-list-bulleted' },
+            { value: 'map', label: 'Map', icon: 'map' },
+            { value: 'heatmap', label: 'Heatmap', icon: 'fire' },
           ]}
         />
       </View>
 
-      {viewMode === 'map' && location ? (
+      {(viewMode === 'map' || viewMode === 'heatmap') && location ? (
         <View style={styles.mapContainer}>
           <MapView
             style={styles.map}
@@ -167,34 +170,55 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               title="You are here"
               pinColor="blue"
             />
-            {issues.map((issue) => {
-              let lng = 0;
-              let lat = 0;
-              
-              if (typeof issue.location === 'string') {
-                const match = (issue.location as string).match(/POINT\(([^ ]+) ([^ ]+)\)/);
-                if (!match) return null;
-                lng = parseFloat(match[1]);
-                lat = parseFloat(match[2]);
-              } else if (issue.location && typeof issue.location === 'object') {
-                 // Handle GeoJSON format
-                 lng = (issue.location as any).coordinates[0];
-                 lat = (issue.location as any).coordinates[1];
-              } else {
-                 return null;
-              }
+            {viewMode === 'heatmap' ? (
+              <Heatmap
+                points={issues.map(issue => {
+                  let lng = 0; let lat = 0;
+                  if (typeof issue.location === 'string') {
+                    const match = (issue.location as string).match(/POINT\(([^ ]+) ([^ ]+)\)/);
+                    if (match) { lng = parseFloat(match[1]); lat = parseFloat(match[2]); }
+                  } else if (issue.location && typeof issue.location === 'object') {
+                    lng = (issue.location as any).coordinates[0];
+                    lat = (issue.location as any).coordinates[1];
+                  }
+                  return { latitude: lat, longitude: lng, weight: issue.severity === 'critical' ? 3 : issue.severity === 'high' ? 2 : 1 };
+                }).filter(p => p.latitude !== 0 && p.longitude !== 0)}
+                radius={40}
+                opacity={0.7}
+                gradient={{
+                  colors: ['transparent', 'green', 'yellow', 'red'],
+                  startPoints: [0.01, 0.25, 0.5, 0.75],
+                  colorMapSize: 256
+                }}
+              />
+            ) : (
+              issues.map((issue) => {
+                let lng = 0; let lat = 0;
+                
+                if (typeof issue.location === 'string') {
+                  const match = (issue.location as string).match(/POINT\(([^ ]+) ([^ ]+)\)/);
+                  if (!match) return null;
+                  lng = parseFloat(match[1]);
+                  lat = parseFloat(match[2]);
+                } else if (issue.location && typeof issue.location === 'object') {
+                   lng = (issue.location as any).coordinates[0];
+                   lat = (issue.location as any).coordinates[1];
+                } else {
+                   return null;
+                }
 
-              return (
-                <Marker
-                  key={issue.id}
-                  coordinate={{ latitude: lat, longitude: lng }}
-                  title={issue.title}
-                  description={issue.category}
-                  onCalloutPress={() => handleIssuePress(issue)}
-                  pinColor={issue.severity === 'critical' ? 'red' : issue.severity === 'high' ? 'orange' : 'green'}
-                />
-              );
-            })}
+                return (
+                  <Marker
+                    key={issue.id}
+                    coordinate={{ latitude: lat, longitude: lng }}
+                    title={issue.title}
+                    description={issue.category}
+                    onCalloutPress={() => handleIssuePress(issue)}
+                    pinColor={issue.severity === 'critical' ? 'red' : issue.severity === 'high' ? 'orange' : 'green'}
+                  />
+                );
+              })
+            )}
           </MapView>
         </View>
       ) : (

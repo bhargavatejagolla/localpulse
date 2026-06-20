@@ -11,6 +11,7 @@ interface Stats {
   resolved: number;
   byCategory: Record<IssueCategory, number>;
   topIssue: string;
+  insight: string;
 }
 
 export const AnalyticsScreen: React.FC = () => {
@@ -43,12 +44,20 @@ export const AnalyticsScreen: React.FC = () => {
 
         const sorted = [...issues].sort((a, b) => b.upvote_count - a.upvote_count);
 
+        const resolutionRate = issues.length > 0 ? Math.round((issues.filter((i) => i.status === 'Resolved').length / issues.length) * 100) : 0;
+        let aiInsight = "Your community is safe and active.";
+        if (sorted[0]) {
+          const maxCat = Object.entries(categoryCount).sort((a,b) => b[1] - a[1])[0];
+          aiInsight = `🚨 ${maxCat[0].charAt(0).toUpperCase() + maxCat[0].slice(1)} issues account for ${Math.round((maxCat[1] / issues.length) * 100)}% of complaints in your radius. Resolution rate is currently ${resolutionRate}%.`;
+        }
+
         setStats({
           total: issues.length,
           open: issues.filter((i) => i.status === 'Open').length,
           resolved: issues.filter((i) => i.status === 'Resolved').length,
           byCategory: categoryCount as Record<IssueCategory, number>,
           topIssue: sorted[0]?.title || 'N/A',
+          insight: aiInsight,
         });
       } catch (error) {
         console.error('Stats error:', error);
@@ -104,6 +113,18 @@ export const AnalyticsScreen: React.FC = () => {
           <Text style={styles.cardLabel}>Resolved</Text>
         </Surface>
       </View>
+
+      {/* AI Insights Card */}
+      <Surface style={[styles.section, { backgroundColor: '#F3E5F5', borderColor: '#CE93D8', borderWidth: 1 }]} elevation={2}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+          <Text variant="titleMedium" style={{ color: '#6A1B9A', fontWeight: 'bold' }}>
+            🤖 AI Pulse Insight
+          </Text>
+        </View>
+        <Text style={{ color: '#4A148C', lineHeight: 22, fontSize: 14 }}>
+          {stats.insight}
+        </Text>
+      </Surface>
 
       {/* Resolution Rate */}
       <Surface style={styles.section} elevation={1}>
