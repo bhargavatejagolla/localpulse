@@ -26,7 +26,7 @@ There is **no structured, geo-aware platform** to report, discover, and connect 
 
 **LocalPulse** is a hyperlocal community platform where *everything* is filtered by a dynamic radius. You only see what is happening right in your neighborhood.
 
-We didn't just build a prototype; we built a **production-ready, premium mobile application** with real-time push notifications, buttery-smooth animations, and robust Android compatibility.
+We didn't just build a prototype; we built a **production-ready, premium mobile application** packed with real-time features, AI automation, and robust Android compatibility.
 
 ---
 
@@ -84,11 +84,12 @@ Watch the 3-minute full feature walkthrough:
 ## 📊 Technical Highlights
 
 - **11 Database Tables:** Fully relational PostgreSQL schema.
-- **PostGIS Spatial Queries:** Instant radius filtering up to 10 km.
-- **Real-Time Push Notifications:** Instant updates using Expo API.
-- **AI-Powered Classification:** Groq LLaMA models automatically tag severity and category from photos.
-- **Secure Authentication:** Robust Session Management.
-- **Smooth Physics:** React Native `Animated` used for 60fps micro-animations.
+- **PostGIS Spatial Queries:** Instant radius filtering up to 10 km using `st_dwithin`.
+- **Real-Time Synchronisation:** Supabase Realtime WebSockets instantly update the Feed across all devices in a neighborhood.
+- **AI-Powered Pulse Insights:** Groq LLaMA models automatically tag severity and category from photos, generating live neighborhood summaries.
+- **Custom Civic Heatmap:** Custom Map overlay physics showing critical zones (Red) vs safe zones (Green).
+- **Secure Authentication:** Robust Google Sign-in flow.
+- **Smooth Physics:** React Native `Animated` used for 60fps micro-animations and Skeleton Loading screens.
 - **Dynamic Insets:** Full `react-native-safe-area-context` integration for modern Android navigation bars.
 
 ---
@@ -106,9 +107,9 @@ Watch the 3-minute full feature walkthrough:
 ## 🚀 Future Roadmap
 
 - **Government API Integration:** Auto-forwarding critical complaints to municipal portals.
-- **Community Heatmaps:** 🔴 High complaint areas, 🟠 Medium, 🟢 Safe zones.
-- **AI Analytics Dashboard:** Identifying seasonal civic patterns (e.g., "Water complaints increase 18% in June").
-- **Community Leader Badges:** Rewarding active citizens.
+- **Advanced Predictive Heatmaps:** AI-generated forecasts of seasonal civic patterns (e.g., predicting waterlogging zones).
+- **Community Leader Badges:** Rewarding active citizens via a decentralized points system.
+- **Admin Command Center:** A full web dashboard for City Planners.
 
 ---
 
