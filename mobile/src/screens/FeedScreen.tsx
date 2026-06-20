@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { Text, ActivityIndicator, Button, SegmentedButtons, Surface } from 'react-native-paper';
-import MapView, { Marker, Circle, Heatmap, PROVIDER_DEFAULT } from 'react-native-maps';
+import MapView, { Marker, Circle, PROVIDER_DEFAULT } from 'react-native-maps';
 import { useLocationContext } from '../hooks/useLocationContext';
 import { useAuth } from '../hooks/useAuth';
 import { RadiusPicker } from '../components/RadiusPicker';
@@ -171,26 +171,35 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               pinColor="blue"
             />
             {viewMode === 'heatmap' ? (
-              <Heatmap
-                points={issues.map(issue => {
-                  let lng = 0; let lat = 0;
-                  if (typeof issue.location === 'string') {
-                    const match = (issue.location as string).match(/POINT\(([^ ]+) ([^ ]+)\)/);
-                    if (match) { lng = parseFloat(match[1]); lat = parseFloat(match[2]); }
-                  } else if (issue.location && typeof issue.location === 'object') {
-                    lng = (issue.location as any).coordinates[0];
-                    lat = (issue.location as any).coordinates[1];
+              issues.map((issue) => {
+                let lng = 0; let lat = 0;
+                if (typeof issue.location === 'string') {
+                  const match = (issue.location as string).match(/POINT\(([^ ]+) ([^ ]+)\)/);
+                  if (match) { lng = parseFloat(match[1]); lat = parseFloat(match[2]); }
+                } else if (issue.location && typeof issue.location === 'object') {
+                  lng = (issue.location as any).coordinates[0];
+                  lat = (issue.location as any).coordinates[1];
+                }
+                if (lat === 0 || lng === 0) return null;
+
+                const getHeatColor = () => {
+                  switch (issue.severity) {
+                    case 'critical': return 'rgba(255, 0, 0, 0.3)';
+                    case 'high': return 'rgba(255, 165, 0, 0.3)';
+                    default: return 'rgba(0, 128, 0, 0.3)';
                   }
-                  return { latitude: lat, longitude: lng, weight: issue.severity === 'critical' ? 3 : issue.severity === 'high' ? 2 : 1 };
-                }).filter(p => p.latitude !== 0 && p.longitude !== 0)}
-                radius={40}
-                opacity={0.7}
-                gradient={{
-                  colors: ['transparent', 'green', 'yellow', 'red'],
-                  startPoints: [0.01, 0.25, 0.5, 0.75],
-                  colorMapSize: 256
-                }}
-              />
+                };
+
+                return (
+                  <Circle
+                    key={`heat-${issue.id}`}
+                    center={{ latitude: lat, longitude: lng }}
+                    radius={150} // 150 meters coverage
+                    fillColor={getHeatColor()}
+                    strokeColor="transparent"
+                  />
+                );
+              })
             ) : (
               issues.map((issue) => {
                 let lng = 0; let lat = 0;

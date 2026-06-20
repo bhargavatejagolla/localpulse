@@ -16,6 +16,7 @@ import {
   TextInput,
   Modal,
   Portal,
+  IconButton,
 } from 'react-native-paper';
 import { useAuth } from '../hooks/useAuth';
 import { useLocationContext } from '../hooks/useLocationContext';
@@ -101,6 +102,29 @@ export const EventsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     }
   };
 
+  const handleDeleteEvent = async (eventId: string) => {
+    Alert.alert(
+      "Delete Event",
+      "Are you sure you want to delete this event?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const { error } = await supabase.from('events').delete().eq('id', eventId);
+              if (error) throw error;
+              await fetchEvents();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete event');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const formatDate = (dateString: string | null): string => {
     if (!dateString) return 'Date TBD';
     const date = new Date(dateString);
@@ -131,6 +155,15 @@ export const EventsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               <Chip icon="calendar" style={styles.dateChip} textStyle={styles.dateChipText}>
                 {formatDate(item.event_date)}
               </Chip>
+              {user && item.created_by === user.id && (
+                <IconButton
+                  icon="delete"
+                  iconColor="#D32F2F"
+                  size={20}
+                  onPress={() => handleDeleteEvent(item.id)}
+                  style={{ margin: 0 }}
+                />
+              )}
             </View>
             <Text variant="titleMedium" style={styles.eventTitle}>
               {item.title}
