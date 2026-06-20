@@ -34,11 +34,11 @@ We didn't just build a prototype; we built a **production-ready, premium mobile 
 
 | Login & Auth | Community Feed | Issue Report |
 |-------------|----------------|--------------|
-| <img src="https://via.placeholder.com/250x500?text=Login+Screen" width="200" /> | <img src="https://via.placeholder.com/250x500?text=Dynamic+Feed" width="200" /> | <img src="https://via.placeholder.com/250x500?text=Smart+Reporting" width="200" /> |
+| <img src="https://placehold.co/250x500/1B5E20/FFFFFF?text=Login+Screen" width="200" /> | <img src="https://placehold.co/250x500/1B5E20/FFFFFF?text=Dynamic+Feed" width="200" /> | <img src="https://placehold.co/250x500/1B5E20/FFFFFF?text=Smart+Reporting" width="200" /> |
 
 | Events Board | Service Directory | Profile & Analytics |
 |--------------|-------------------|---------------------|
-| <img src="https://via.placeholder.com/250x500?text=Events" width="200" /> | <img src="https://via.placeholder.com/250x500?text=Directory" width="200" /> | <img src="https://via.placeholder.com/250x500?text=Analytics" width="200" /> |
+| <img src="https://placehold.co/250x500/1B5E20/FFFFFF?text=Events" width="200" /> | <img src="https://placehold.co/250x500/1B5E20/FFFFFF?text=Directory" width="200" /> | <img src="https://placehold.co/250x500/1B5E20/FFFFFF?text=Analytics" width="200" /> |
 
 *(Replace placeholders with actual app screenshots)*
 
