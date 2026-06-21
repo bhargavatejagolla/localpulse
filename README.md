@@ -136,4 +136,9 @@ graph TD
    ```
 
 ---
-*Built with ❤️ for the Hackathon.*
+
+## 🙏 Acknowledgements
+
+Built with ❤️ by **Team Quantum Quotients** for **DevFusion 3.O | The Developers Hackathon**.
+
+We would like to extend our deepest gratitude to the **Indian Institute of Technology (IIT), Bombay** and the hackathon organizers for providing us with this amazing opportunity to build and showcase LocalPulse.
