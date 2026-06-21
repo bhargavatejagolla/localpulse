@@ -1,4 +1,6 @@
 <div align="center">
+  <img src="https://github.com/Anmol-Baranwal/Cool-GIFs-For-GitHub/assets/74038190/9be4d344-6782-461a-b5a6-32a07bf7b34e" width="300" alt="animated hello">
+  <br><br>
   <img src="./mobile/assets/logo.png" alt="LocalPulse Logo" width="120" />
   
   # LocalPulse
@@ -15,6 +17,8 @@
 ---
 
 ## 🚨 The Problem
+<img src="https://user-images.githubusercontent.com/74038190/212745723-c7c386dc-108c-4a50-9c76-0f90afb2c0fa.gif" width="150" align="right">
+
 Modern cities face a severe disconnect between citizens and local authorities. When a civic issue occurs—such as a broken water pipe, an open manhole, or a power outage—citizens struggle with:
 - **Fragmented Reporting:** Unclear channels on exactly who to contact.
 - **Lack of Transparency:** No way to track if an issue is being seen or resolved.
@@ -73,6 +77,7 @@ Before an issue is submitted, the system cross-references GPS coordinates and AI
 ---
 
 ## 🚀 Extreme Scalability & Architecture
+<img src="https://user-images.githubusercontent.com/74038190/219923809-b86dc415-a0c2-4a38-bc88-ad6cf06395a8.gif" width="150" align="right">
 
 LocalPulse is not just a prototype; it is engineered for production-level municipal scaling.
 
@@ -98,6 +103,7 @@ graph TD
 ---
 
 ## 💻 Getting Started
+<img src="https://user-images.githubusercontent.com/74038190/212749168-86d6c7ab-98da-409b-998f-c5b74721badd.gif" width="150" align="right">
 
 ### Prerequisites
 - Node.js (v18+)
