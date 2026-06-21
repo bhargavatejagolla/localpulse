@@ -43,7 +43,7 @@ By leveraging **Google Gemini AI** and **Real-Time Geospatial Tracking**, citize
 <p align="center">
   <img src="image7.jpg" width="32%" alt="Leaderboard"/>
   <img src="image8.jpg" width="32%" alt="AI Detail"/>
-  <img src="image9.jpg" width="32%" alt="Success Modal"/>
+  <img src="image9.jpeg" width="32%" alt="Success Modal"/>
 </p>
 
 ---
