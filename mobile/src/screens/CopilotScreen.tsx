@@ -6,7 +6,7 @@ import { BlurView } from 'expo-blur';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import { useLocationContext } from '../hooks/useLocationContext';
-import { getIssuesWithinRadius } from '../services/database';
+import { getAllIssues } from '../services/database';
 import { chatWithCopilot } from '../services/aiService';
 import { Issue } from '../types';
 
@@ -42,12 +42,10 @@ export const CopilotScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       ])
     ).start();
 
-    if (location) {
-      getIssuesWithinRadius(location.latitude, location.longitude, radiusInMeters)
-        .then(setLocalIssues)
-        .catch(console.error);
-    }
-  }, [location, radiusInMeters]);
+    getAllIssues()
+      .then(setLocalIssues)
+      .catch(console.error);
+  }, []);
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
