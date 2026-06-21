@@ -32,9 +32,9 @@ By leveraging **Google Gemini AI** and **Real-Time Geospatial Tracking**, citize
 <h2 align="center">✨ Live App Gallery</h2>
 
 <p align="center">
-  <img src="image1.png" width="32%" alt="Screenshot 1"/>
-  <img src="image1.2.png" width="32%" alt="Screenshot 2"/>
-  <img src="image2.jpg" width="32%" alt="Screenshot 3"/>
+  <img src="image0.png" width="32%" alt="Screenshot 1"/>
+  <img src="image1.png" width="32%" alt="Screenshot 2"/>
+  <img src="image1.2.png" width="32%" alt="Screenshot 3"/>
 </p>
 <p align="center">
   <img src="image3.jpg" width="32%" alt="Screenshot 4"/>
