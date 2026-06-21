@@ -26,6 +26,7 @@ export const RadiusPicker: React.FC = () => {
         onValueChange={handleValueChange}
         buttons={buttons}
         density="small"
+        theme={{ colors: { secondaryContainer: 'rgba(34,197,94,0.2)', onSecondaryContainer: '#22C55E', onSurface: '#FFFFFF', outline: 'rgba(255,255,255,0.2)' } }}
       />
     </View>
   );
@@ -35,12 +36,13 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: 'rgba(255,255,255,0.05)',
   },
   label: {
     marginBottom: 8,
-    color: '#424242',
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
 });

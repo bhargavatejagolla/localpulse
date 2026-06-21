@@ -10,6 +10,7 @@ import { EventsScreen } from "../screens/EventsScreen";
 import { DirectoryScreen } from "../screens/DirectoryScreen";
 import { ProfileScreen } from "../screens/ProfileScreen";
 import { IssueDetailScreen } from "../screens/IssueDetailScreen";
+import { CopilotScreen } from "../screens/CopilotScreen";
 import { AuthorityScreen } from '../screens/AuthorityScreen';
 import { AnalyticsScreen } from '../screens/AnalyticsScreen';
 import { useAuth } from '../hooks/useAuth';
@@ -25,11 +26,7 @@ const FeedStackScreen = () => {
         name="FeedList"
         component={FeedScreen}
         options={{
-          title: "Community Feed",
-          headerStyle: {
-            backgroundColor: "#1B5E20",
-          },
-          headerTintColor: "#FFFFFF",
+          headerShown: false,
         }}
       />
 
@@ -39,9 +36,18 @@ const FeedStackScreen = () => {
         options={{
           title: "Issue Details",
           headerStyle: {
-            backgroundColor: "#1B5E20",
+            backgroundColor: "#0B1120",
           },
           headerTintColor: "#FFFFFF",
+        }}
+      />
+
+      <FeedStack.Screen
+        name="Copilot"
+        component={CopilotScreen}
+        options={{
+          headerShown: false,
+          presentation: "modal", // slides up from bottom
         }}
       />
     </FeedStack.Navigator>
@@ -56,13 +62,13 @@ export const MainTabs: React.FC = () => {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: "#1B5E20",
+        tabBarActiveTintColor: "#22C55E",
         tabBarInactiveTintColor: "#757575",
 
         tabBarStyle: {
-          backgroundColor: "#FFFFFF",
+          backgroundColor: "#111827",
           borderTopWidth: 1,
-          borderTopColor: "#E0E0E0",
+          borderTopColor: "rgba(255,255,255,0.05)",
           height: 60 + insets.bottom,
           paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 4,
@@ -74,7 +80,7 @@ export const MainTabs: React.FC = () => {
         },
 
         headerStyle: {
-          backgroundColor: "#1B5E20",
+          backgroundColor: "#0B1120",
         },
 
         headerTintColor: "#FFFFFF",
@@ -157,9 +163,9 @@ export const MainTabs: React.FC = () => {
         component={AnalyticsScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="chart-bar" color={color} size={size} />
+            <MaterialCommunityIcons name="brain" color={color} size={size} />
           ),
-          title: 'Stats',
+          title: 'Intelligence',
         }}
       />
 

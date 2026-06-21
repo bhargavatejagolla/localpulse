@@ -2,12 +2,13 @@ import React from "react";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { PaperProvider, MD3LightTheme } from "react-native-paper";
-import { NavigationContainer } from "@react-navigation/native";
+import { PaperProvider, MD3DarkTheme } from "react-native-paper";
+import { NavigationContainer, DarkTheme as NavigationDarkTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import { AuthProvider, useAuth } from "./src/hooks/useAuth";
 import { LocationProvider } from "./src/hooks/useLocationContext";
+import { NotificationProvider } from "./src/hooks/NotificationContext";
 
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { SignupScreen } from "./src/screens/SignupScreen";
@@ -17,11 +18,14 @@ import { ErrorBoundary } from './src/components/ErrorBoundary';
 const Stack = createNativeStackNavigator();
 
 const theme = {
-  ...MD3LightTheme,
+  ...MD3DarkTheme,
   colors: {
-    ...MD3LightTheme.colors,
-    primary: "#1B5E20",
-    secondary: "#FF6F00",
+    ...MD3DarkTheme.colors,
+    primary: "#166534", // Emerald Green
+    secondary: "#22C55E", // Neon Green
+    background: "#0B1120", // Dark Navy
+    surface: "#111827", // Cards
+    onSurface: "#FFFFFF",
   },
 };
 
@@ -32,10 +36,10 @@ const LoadingScreen = () => {
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#1B5E20",
+        backgroundColor: "#0B1120",
       }}
     >
-      <ActivityIndicator size="large" color="#FFFFFF" />
+      <ActivityIndicator size="large" color="#22C55E" />
     </View>
   );
 };
@@ -68,9 +72,11 @@ export default function App() {
         <PaperProvider theme={theme}>
           <AuthProvider>
             <LocationProvider>
-              <NavigationContainer>
-                <AppNavigator />
-              </NavigationContainer>
+              <NotificationProvider>
+                <NavigationContainer theme={NavigationDarkTheme}>
+                  <AppNavigator />
+                </NavigationContainer>
+              </NotificationProvider>
             </LocationProvider>
           </AuthProvider>
 

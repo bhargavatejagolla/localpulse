@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from "react-native";
 import {
   TextInput,
@@ -22,7 +23,9 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../hooks/useAuth";
 import { useLocationContext } from "../hooks/useLocationContext";
+import { LeafletMap } from '../components/LeafletMap';
 import { createIssue, uploadIssueImage } from "../services/database";
+import { triggerNotification } from "../services/api";
 import { classifyIssue, generateTitle, checkDuplicates } from "../services/aiService";
 import { IssueCategory, IssueSeverity } from "../types";
 
@@ -38,7 +41,49 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [aiResult, setAiResult] = useState<{
     category: IssueCategory;
     severity: IssueSeverity;
+    confidence: number;
+    reasoning?: string;
   } | null>(null);
+
+  const [customLocation, setCustomLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Animations
+  const imageAnim = React.useRef(new Animated.Value(0)).current;
+  const descAnim = React.useRef(new Animated.Value(0)).current;
+  const anonAnim = React.useRef(new Animated.Value(0)).current;
+  const btnAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    const createAnim = (anim: Animated.Value) => {
+      return Animated.spring(anim, {
+        toValue: 1,
+        tension: 50,
+        friction: 8,
+        useNativeDriver: true,
+      });
+    };
+
+    Animated.stagger(100, [
+      createAnim(imageAnim),
+      createAnim(descAnim),
+      createAnim(anonAnim),
+      createAnim(btnAnim),
+    ]).start();
+  }, []);
+
+  const getAnimStyle = (anim: Animated.Value) => ({
+    opacity: anim,
+    transform: [
+      {
+        translateY: anim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [50, 0],
+        }),
+      },
+    ],
+  });
 
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -59,6 +104,7 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             quality: 0.8,
             allowsEditing: true,
+            aspect: [4, 3],
           });
           if (!result.canceled && result.assets[0]) {
             setImageUri(result.assets[0].uri);
@@ -73,6 +119,7 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             quality: 0.8,
             allowsEditing: true,
+            aspect: [4, 3],
           });
           if (!result.canceled && result.assets[0]) {
             setImageUri(result.assets[0].uri);
@@ -84,22 +131,47 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     ]);
   };
 
+  const handleLocationSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    try {
+      // Append , India for better local search accuracy as requested
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery + ', India')}&limit=1`, {
+        headers: {
+          'User-Agent': 'LocalPulseApp/1.0',
+        }
+      });
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lng = parseFloat(data[0].lon);
+        setCustomLocation({ lat, lng });
+      } else {
+        Alert.alert('Location Not Found', 'We couldn\'t find that exact address.\n\nPlease try a broader search or simply tap the map to place the pin manually!');
+      }
+    } catch (e) {
+      Alert.alert("Error", "Could not search location.");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!description.trim()) {
-      Alert.alert("Required", "Please describe the issue.");
+      Alert.alert("Error", "Please describe the issue");
+      return;
+    }
+
+    const submitLat = customLocation ? customLocation.lat : location?.latitude;
+    const submitLng = customLocation ? customLocation.lng : location?.longitude;
+
+    if (!submitLat || !submitLng) {
+      Alert.alert("Error", "Location is required to report an issue.");
       return;
     }
 
     if (!imageUri) {
       Alert.alert("Required", "Please add a photo of the issue.");
-      return;
-    }
-
-    if (!location) {
-      Alert.alert(
-        "Error",
-        "Location not available. Please enable location services.",
-      );
       return;
     }
 
@@ -131,7 +203,7 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       setAiResult(classification);
 
       // Check duplicates
-      const duplicates = await checkDuplicates(description, classification.category, location);
+      const duplicates = await checkDuplicates(description, classification.category, { latitude: submitLat, longitude: submitLng });
 
       if (duplicates.length > 0) {
         Alert.alert(
@@ -139,13 +211,13 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           `There ${duplicates.length === 1 ? 'is' : 'are'} ${duplicates.length} similar issue${duplicates.length > 1 ? 's' : ''} nearby:\n\n${duplicates.map(d => `• ${d.title}`).join('\n')}\n\nStill want to report?`,
           [
             { text: 'Cancel', style: 'cancel', onPress: () => setLoading(false) },
-            { text: 'Report Anyway', onPress: () => submitIssue(classification, imageUrl) },
+            { text: 'Report Anyway', onPress: () => submitIssue(classification, imageUrl, { latitude: submitLat, longitude: submitLng }) },
           ]
         );
         return;
       }
 
-      await submitIssue(classification, imageUrl);
+      await submitIssue(classification, imageUrl, { latitude: submitLat, longitude: submitLng });
     } catch (error: any) {
       console.error("Submit error:", error);
       Alert.alert(
@@ -156,20 +228,23 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     }
   };
 
-  const submitIssue = async (classification: any, imageUrl: string | null) => {
+  const submitIssue = async (classification: any, imageUrl: string | null, loc: { latitude: number, longitude: number }) => {
     try {
       const title = generateTitle(classification.category, description);
 
-      await createIssue(
+      const issue = await createIssue(
         user!.id,
         title,
         description,
         classification.category,
         classification.severity,
         imageUrl,
-        location!,
+        loc,
         isAnonymous,
       );
+
+      // Trigger the backend notification engine asynchronously (no await needed for UI flow)
+      triggerNotification(issue.id).catch(console.error);
 
       Alert.alert(
         "✅ Issue Reported!",
@@ -181,8 +256,9 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               setDescription("");
               setImageUri(null);
               setAiResult(null);
-              setIsAnonymous(false);
-              navigation.navigate("Feed");
+              setCustomLocation(null);
+              setSearchQuery("");
+              navigation.navigate('FeedList');
             },
           },
         ],
@@ -217,6 +293,7 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Image Picker */}
+        <Animated.View style={getAnimStyle(imageAnim)}>
         <Surface style={styles.imageSection} elevation={1}>
           <Text variant="titleSmall" style={styles.sectionTitle}>
             📸 Photo Evidence
@@ -247,8 +324,50 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             </Button>
           )}
         </Surface>
+        </Animated.View>
+
+        <Animated.View style={getAnimStyle(descAnim, 10)}>
+          <Surface style={styles.formSection} elevation={1}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              📍 Location
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <TextInput
+                mode="outlined"
+                placeholder="Search address or area..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                style={{ flex: 1, backgroundColor: "rgba(255,255,255,0.05)", height: 40 }}
+                textColor="#FFFFFF"
+                theme={{ colors: { onSurfaceVariant: "#A0A0A0", primary: "#22C55E" } }}
+                onSubmitEditing={handleLocationSearch}
+              />
+              <Button 
+                mode="contained" 
+                onPress={handleLocationSearch} 
+                loading={isSearching}
+                buttonColor="#22C55E"
+                textColor="#0B1120"
+                style={{ marginLeft: 8 }}
+              >
+                Search
+              </Button>
+            </View>
+            <View style={{ height: 200, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+              <LeafletMap 
+                center={{ latitude: customLocation?.lat || location?.latitude || 0, longitude: customLocation?.lng || location?.longitude || 0 }} 
+                mode="picker" 
+                onLocationSelect={(lat, lng) => setCustomLocation({ lat, lng })}
+              />
+            </View>
+            <Text style={{ color: '#A0A0A0', fontSize: 12, marginTop: 8, textAlign: 'center' }}>
+              Tap the map to manually pin the exact issue location.
+            </Text>
+          </Surface>
+        </Animated.View>
 
         {/* Description */}
+        <Animated.View style={getAnimStyle(descAnim, 20)}>
         <Surface style={styles.formSection} elevation={1}>
           <Text variant="titleSmall" style={styles.sectionTitle}>
             📝 Description
@@ -261,7 +380,9 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             multiline
             numberOfLines={4}
             placeholder="Describe the problem you found..."
+            placeholderTextColor="#A0A0A0"
             style={styles.textArea}
+            theme={{ colors: { onSurfaceVariant: '#A0A0A0' } }}
           />
           <Button 
             mode="contained-tonal" 
@@ -280,12 +401,14 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             AI Auto-Fill Category
           </Button>
         </Surface>
+        </Animated.View>
 
         {/* Anonymous Toggle */}
+        <Animated.View style={getAnimStyle(anonAnim, 30)}>
         <Surface style={styles.formSection} elevation={1}>
           <View style={styles.anonymousRow}>
             <View>
-              <Text variant="titleSmall">👤 Anonymous Report</Text>
+              <Text variant="titleSmall" style={{ color: '#FFFFFF' }}>👤 Anonymous Report</Text>
               <Text variant="bodySmall" style={styles.anonymousHint}>
                 Your name won't be shown publicly
               </Text>
@@ -293,7 +416,7 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             <Switch
               value={isAnonymous}
               onValueChange={setIsAnonymous}
-              color="#1B5E20"
+              color="#22C55E"
             />
           </View>
         </Surface>
@@ -301,9 +424,14 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         {/* AI Result Preview */}
         {aiResult && (
           <Surface style={styles.aiResult} elevation={1}>
-            <Text variant="titleSmall" style={styles.sectionTitle}>
-              🤖 AI Analysis
-            </Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text variant="titleSmall" style={styles.sectionTitle}>
+                🤖 AI Severity Detection
+              </Text>
+              <Text style={{ color: '#22C55E', fontWeight: 'bold', fontSize: 12 }}>
+                {Math.round(aiResult.confidence * 100)}% Confidence
+              </Text>
+            </View>
             <View style={styles.aiRow}>
               <Chip icon="tag" style={styles.aiChip}>
                 {categoryLabels[aiResult.category]}
@@ -319,31 +447,41 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                 {aiResult.severity.toUpperCase()}
               </Chip>
             </View>
+            {aiResult.reasoning && (
+              <Text style={{ color: '#A0A0A0', fontSize: 13, marginTop: 12, fontStyle: 'italic' }}>
+                " {aiResult.reasoning} "
+              </Text>
+            )}
           </Surface>
         )}
-
-        {/* Location Info */}
-        {location && (
-          <Surface style={styles.locationSection} elevation={0}>
-            <Text variant="bodySmall" style={styles.locationText}>
-              📍 Location: {location.latitude.toFixed(4)},{" "}
-              {location.longitude.toFixed(4)}
-            </Text>
-          </Surface>
-        )}
+        </Animated.View>
 
         {/* Submit Button */}
-        <Button
-          mode="contained"
-          onPress={handleSubmit}
-          loading={loading}
-          disabled={loading || !description || !imageUri}
-          style={styles.submitButton}
-          contentStyle={styles.submitButtonContent}
-          icon="send"
-        >
-          {loading ? "Submitting..." : "Submit Report"}
-        </Button>
+        <Animated.View style={[styles.section, getAnimStyle(btnAnim), { flexDirection: 'row', gap: 12 }]}>
+          <Button
+            mode="outlined"
+            onPress={() => {
+              setDescription('');
+              setImageUri(null);
+              navigation.navigate('FeedList');
+            }}
+            style={[styles.submitButton, { flex: 1 }]}
+            textColor="#A0A0A0"
+          >
+            Cancel
+          </Button>
+          <Button
+            mode="contained"
+            onPress={handleSubmit}
+            loading={loading}
+            disabled={loading}
+            style={[styles.submitButton, { flex: 2 }]}
+            buttonColor="#22C55E"
+            textColor="#0B1120"
+          >
+            {loading ? "Submitting..." : "Submit Report"}
+          </Button>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -352,20 +490,22 @@ export const ReportScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#0B1120",
   },
   scrollContent: {
     padding: 16,
     paddingBottom: 40,
   },
   imageSection: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#111827",
+    borderColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
   },
   sectionTitle: {
-    color: "#212121",
+    color: "#FFFFFF",
     marginBottom: 12,
     fontWeight: "600",
   },
@@ -373,7 +513,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
     borderWidth: 2,
-    borderColor: "#E0E0E0",
+    borderColor: "rgba(255,255,255,0.2)",
     borderStyle: "dashed",
   },
   previewImage: {
@@ -385,23 +525,25 @@ const styles = StyleSheet.create({
     height: 200,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "rgba(255,255,255,0.02)",
   },
   imagePlaceholderText: {
     fontSize: 48,
     marginBottom: 8,
   },
   imagePlaceholderSubtext: {
-    color: "#9E9E9E",
+    color: "#A0A0A0",
   },
   formSection: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#111827",
+    borderColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
   },
   textArea: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "rgba(255,255,255,0.05)",
   },
   anonymousRow: {
     flexDirection: "row",
@@ -409,11 +551,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   anonymousHint: {
-    color: "#757575",
+    color: "#A0A0A0",
     marginTop: 2,
   },
   aiResult: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "rgba(34,197,94,0.1)",
+    borderColor: "rgba(34,197,94,0.3)",
+    borderWidth: 1,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -424,7 +568,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   aiChip: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "rgba(255,255,255,0.1)",
   },
   locationSection: {
     backgroundColor: "transparent",
@@ -433,10 +577,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   locationText: {
-    color: "#757575",
+    color: "#A0A0A0",
   },
   submitButton: {
-    backgroundColor: "#1B5E20",
+    backgroundColor: "#22C55E",
     borderRadius: 12,
   },
   submitButtonContent: {

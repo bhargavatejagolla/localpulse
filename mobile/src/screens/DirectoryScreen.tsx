@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Linking,
   Alert,
+  Animated,
 } from 'react-native';
 import {
   Text,
@@ -23,6 +24,7 @@ import {
 import { useLocationContext } from '../hooks/useLocationContext';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
+import { createProvider } from '../services/database';
 import { ServiceProvider, ProviderCategory } from '../types';
 
 const PROVIDER_CATEGORIES: ProviderCategory[] = [
@@ -73,9 +75,31 @@ export const DirectoryScreen: React.FC = () => {
     }
   }, [location, radiusInMeters]);
 
+  // Animation state
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const slideAnim = React.useRef(new Animated.Value(50)).current;
+
   useEffect(() => {
     if (location) fetchProviders();
   }, [location, radiusInMeters, fetchProviders]);
+
+  useEffect(() => {
+    if (!loading && providers.length > 0) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        })
+      ]).start();
+    }
+  }, [loading, providers]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -96,14 +120,7 @@ export const DirectoryScreen: React.FC = () => {
     setSubmitting(true);
 
     try {
-      const { error } = await supabase.from('providers').insert({
-        name: name.trim(),
-        phone: phone.trim(),
-        category,
-        location: `POINT(${location.longitude} ${location.latitude})`,
-      });
-
-      if (error) throw error;
+      await createProvider(name.trim(), phone.trim(), category, location.latitude, location.longitude);
 
       Alert.alert('✅ Success', 'Service provider added!');
       setName('');
@@ -145,7 +162,7 @@ export const DirectoryScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#1B5E20" />
+        <ActivityIndicator size="large" color="#22C55E" />
       </View>
     );
   }
@@ -158,7 +175,9 @@ export const DirectoryScreen: React.FC = () => {
         onChangeText={setSearchQuery}
         value={searchQuery}
         style={styles.searchbar}
-        iconColor="#1B5E20"
+        iconColor="#22C55E"
+        placeholderTextColor="#A0A0A0"
+        theme={{ colors: { onSurfaceVariant: '#FFFFFF', elevation: { level3: '#111827' } } }}
       />
 
       {/* Category Filters */}
@@ -166,7 +185,8 @@ export const DirectoryScreen: React.FC = () => {
         <Chip
           selected={selectedCategory === 'all'}
           onPress={() => setSelectedCategory('all')}
-          style={styles.filterChip}
+          style={[styles.filterChip, selectedCategory === 'all' && styles.activeFilter]}
+          textStyle={{ color: selectedCategory === 'all' ? '#0B1120' : '#FFFFFF' }}
         >
           All
         </Chip>
@@ -175,37 +195,55 @@ export const DirectoryScreen: React.FC = () => {
             key={cat}
             selected={selectedCategory === cat}
             onPress={() => setSelectedCategory(cat)}
-            style={styles.filterChip}
+            style={[styles.filterChip, selectedCategory === cat && styles.activeFilter]}
+            textStyle={{ color: selectedCategory === cat ? '#0B1120' : '#FFFFFF' }}
           >
             {cat}
           </Chip>
         ))}
       </View>
 
-      <FlatList
+      <Animated.FlatList
         data={filteredProviders}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <Surface style={styles.providerCard} elevation={1}>
-            <View style={styles.providerInfo}>
-              <Text variant="titleSmall" style={styles.providerName}>
-                {item.name}
-              </Text>
-              <Chip style={styles.categoryChip} textStyle={styles.categoryChipText}>
-                {item.category}
-              </Chip>
-              <Text variant="bodySmall" style={styles.ratingText}>
-                {renderStars(item.rating)} ({item.review_count || 0} reviews)
-              </Text>
-            </View>
-            <IconButton
-              icon="phone"
-              iconColor="#1B5E20"
-              size={24}
-              onPress={() => item.phone && handleCall(item.phone)}
-            />
-          </Surface>
-        )}
+        renderItem={({ item, index }) => {
+          // Stagger effect based on index
+          const itemFade = fadeAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, 1]
+          });
+          const itemSlide = slideAnim.interpolate({
+            inputRange: [0, 50],
+            outputRange: [0, 50 + (index * 20)] // staggered drop
+          });
+
+          return (
+          <Animated.View style={{ opacity: itemFade, transform: [{ translateY: itemSlide }] }}>
+            <Surface style={styles.providerCard} elevation={1}>
+              <View style={styles.providerInfo}>
+                <Text variant="titleSmall" style={styles.providerName}>
+                  {item.name}
+                </Text>
+                <Chip style={styles.categoryChip} textStyle={styles.categoryChipText}>
+                  {item.category}
+                </Chip>
+                <Text variant="bodySmall" style={{ color: '#E0E0E0', marginBottom: 4, marginTop: 4 }}>
+                  📞 {item.phone}
+                </Text>
+                <Text variant="bodySmall" style={styles.ratingText}>
+                  {renderStars(item.rating)} ({item.review_count || 0} reviews)
+                </Text>
+              </View>
+              <IconButton
+                icon="phone"
+                iconColor="#22C55E"
+                size={24}
+                onPress={() => item.phone && handleCall(item.phone)}
+              />
+            </Surface>
+          </Animated.View>
+          );
+        }}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#1B5E20']} />
@@ -229,7 +267,8 @@ export const DirectoryScreen: React.FC = () => {
         icon="plus"
         onPress={() => setShowAddModal(true)}
         style={styles.fab}
-        buttonColor="#1B5E20"
+        buttonColor="#22C55E"
+        textColor="#0B1120"
       >
         Add Provider
       </Button>
@@ -251,6 +290,10 @@ export const DirectoryScreen: React.FC = () => {
             onChangeText={setName}
             mode="outlined"
             style={styles.input}
+            textColor="#FFFFFF"
+            theme={{ colors: { primary: '#22C55E', background: '#0B1120', onSurfaceVariant: '#A0A0A0' } }}
+            outlineColor="rgba(255,255,255,0.1)"
+            activeOutlineColor="#22C55E"
           />
           <TextInput
             label="Phone Number"
@@ -259,6 +302,10 @@ export const DirectoryScreen: React.FC = () => {
             mode="outlined"
             keyboardType="phone-pad"
             style={styles.input}
+            textColor="#FFFFFF"
+            theme={{ colors: { primary: '#22C55E', background: '#0B1120', onSurfaceVariant: '#A0A0A0' } }}
+            outlineColor="rgba(255,255,255,0.1)"
+            activeOutlineColor="#22C55E"
           />
 
           <Text variant="bodyMedium" style={styles.categoryLabel}>
@@ -270,7 +317,8 @@ export const DirectoryScreen: React.FC = () => {
                 key={cat}
                 selected={category === cat}
                 onPress={() => setCategory(cat)}
-                style={styles.categoryOption}
+                style={[styles.categoryOption, category === cat && { backgroundColor: '#22C55E' }]}
+                textStyle={{ color: category === cat ? '#0B1120' : '#FFFFFF' }}
               >
                 {cat}
               </Chip>
@@ -279,9 +327,10 @@ export const DirectoryScreen: React.FC = () => {
 
           <View style={styles.modalButtons}>
             <Button
-              mode="outlined"
+              mode="text"
               onPress={() => setShowAddModal(false)}
               style={styles.modalButton}
+              textColor="#A0A0A0"
             >
               Cancel
             </Button>
@@ -290,9 +339,10 @@ export const DirectoryScreen: React.FC = () => {
               onPress={handleAddProvider}
               loading={submitting}
               style={styles.modalButton}
-              buttonColor="#1B5E20"
+              buttonColor="#22C55E"
+              textColor="#0B1120"
             >
-              Add
+              Add Provider
             </Button>
           </View>
         </Modal>
@@ -304,17 +354,20 @@ export const DirectoryScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#0B1120',
   },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#0B1120',
   },
   searchbar: {
     margin: 12,
     elevation: 2,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
   categoryRow: {
     flexDirection: 'row',
@@ -325,40 +378,57 @@ const styles = StyleSheet.create({
   },
   filterChip: {
     height: 32,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1,
+  },
+  activeFilter: {
+    backgroundColor: '#22C55E',
+    borderColor: '#22C55E',
   },
   listContent: {
     padding: 16,
     paddingBottom: 80,
   },
   providerCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    borderColor: 'rgba(34,197,94,0.3)',
+    borderWidth: 1,
+    shadowColor: '#22C55E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
   },
   providerInfo: {
     flex: 1,
   },
   providerName: {
-    color: '#212121',
-    fontWeight: '600',
-    marginBottom: 4,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 18,
+    marginBottom: 6,
   },
   categoryChip: {
-    backgroundColor: '#E8F5E9',
-    height: 24,
+    backgroundColor: 'rgba(34,197,94,0.15)',
     alignSelf: 'flex-start',
     marginBottom: 4,
+    borderRadius: 6,
   },
   categoryChipText: {
-    fontSize: 10,
-    color: '#1B5E20',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#4ADE80',
+    paddingVertical: 2,
+    paddingHorizontal: 4,
   },
   ratingText: {
-    color: '#757575',
+    color: '#A0A0A0',
     fontSize: 12,
   },
   emptyState: {
@@ -366,11 +436,11 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   emptyTitle: {
-    color: '#616161',
+    color: '#FFFFFF',
     marginTop: 16,
   },
   emptyText: {
-    color: '#9E9E9E',
+    color: '#A0A0A0',
     textAlign: 'center',
     marginTop: 8,
   },
@@ -381,40 +451,46 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#111827',
     margin: 20,
     padding: 24,
-    borderRadius: 16,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(34,197,94,0.3)',
   },
   modalTitle: {
-    color: '#1B5E20',
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 20,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
   input: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   categoryLabel: {
-    color: '#424242',
+    color: '#A0A0A0',
     marginBottom: 8,
+    marginTop: 4,
   },
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   categoryOption: {
     height: 32,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
   },
   modalButtons: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
+    justifyContent: 'space-between',
     marginTop: 8,
   },
   modalButton: {
-    minWidth: 100,
+    flex: 1,
+    marginHorizontal: 4,
   },
 });

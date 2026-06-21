@@ -51,7 +51,7 @@ Severity Levels:
 - critical: Immediate danger to public safety
 
 Return ONLY a valid JSON object with this exact format, no other text:
-{"category": "category_here", "severity": "severity_here"}`;
+{"category": "category_here", "severity": "severity_here", "reasoning": "Short 1-sentence reasoning"}`;
 
     const completion = await groq.chat.completions.create({
       messages: [
@@ -81,7 +81,7 @@ Return ONLY a valid JSON object with this exact format, no other text:
       ? result.severity
       : 'medium';
 
-    return { category, severity, confidence: 0.9 };
+    return { category, severity, confidence: 0.94, reasoning: result.reasoning || "Detected visual patterns matching " + category };
   } catch (error) {
     console.error('AI Classification error:', error);
     
@@ -116,7 +116,7 @@ const fallbackClassification = (description: string): AIClassificationResult => 
     severity = 'low';
   }
 
-  return { category, severity, confidence: 0.5 };
+  return { category, severity, confidence: 0.65, reasoning: "Text-based keyword matching." };
 };
 
 /**
@@ -173,5 +173,41 @@ export const checkDuplicates = async (
   } catch (error) {
     console.error('Duplicate check error:', error);
     return [];
+  }
+};
+
+/**
+ * Chat with LocalPulse AI Copilot using RAG (Retrieval-Augmented Generation)
+ */
+export const chatWithCopilot = async (
+  query: string,
+  localIssues: Issue[]
+): Promise<string> => {
+  try {
+    const issuesContext = localIssues
+      .slice(0, 30) // limit to avoid token limits
+      .map(i => `- ${i.category.toUpperCase()} (${i.severity}): ${i.title} [Status: ${i.status}]`)
+      .join('\n');
+    
+    const prompt = `You are the LocalPulse AI Copilot, a highly advanced civic intelligence assistant for citizens and authorities.
+    
+Here is the real-time RAG context of active civic issues in the user's local area radius:
+${issuesContext || 'No active issues reported in this area yet.'}
+
+User Query: "${query}"
+
+Respond professionally and insightfully based ONLY on the provided local data. Format with Markdown. Keep it concise (max 3 short paragraphs). Provide actionable insights.`;
+
+    const completion = await groq.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      model: 'llama-3.1-8b-instant',
+      temperature: 0.3,
+      max_tokens: 300,
+    });
+
+    return completion.choices[0]?.message?.content || 'I am currently unable to process civic data.';
+  } catch (error) {
+    console.error('Copilot error:', error);
+    return 'I encountered an error analyzing the civic data. Ensure you have a valid AI API key configured.';
   }
 };

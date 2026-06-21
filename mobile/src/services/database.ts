@@ -72,7 +72,7 @@ export const getIssuesWithinRadius = async (
 export const getAllIssues = async () => {
   const { data, error } = await supabase
     .from("issues")
-    .select("*, profiles(full_name, avatar_url)")
+    .select("*")
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -167,6 +167,23 @@ export const createIssue = async (
     throw error;
   }
 
+  // Trigger Local Python AI Notification Engine
+  try {
+    // We use a best-effort approach to trigger the notification engine.
+    // If the server isn't running, we just log and continue.
+    // Replace localhost with 10.0.2.2 for Android Emulator, or just ignore failures for now.
+    fetch('http://10.0.2.2:8000/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ issue_id: data.id })
+    }).catch(() => {
+      // Ignore network errors if the local server isn't running
+      console.log("Notification engine not reachable. Make sure `python notification_engine.py` is running.");
+    });
+  } catch (e) {
+    // Ignore error
+  }
+
   return data as Issue;
 };
 
@@ -201,6 +218,39 @@ export const uploadIssueImage = async (
     return urlData.publicUrl;
   } catch (error) {
     console.error("Upload error:", error);
+    throw error;
+  }
+};
+
+export const uploadAvatar = async (
+  uri: string,
+  userId: string,
+): Promise<string> => {
+  try {
+    const fileExt = uri.split(".").pop() || "jpg";
+    const filePath = `avatars/${userId}-${Date.now()}.${fileExt}`;
+
+    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
+    const arrayBuffer = decode(base64);
+
+    const { error: uploadError } = await supabase.storage
+      .from("issue-images")
+      .upload(filePath, arrayBuffer, {
+        contentType: `image/${fileExt}`,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("issue-images")
+      .getPublicUrl(filePath);
+
+    return urlData.publicUrl;
+  } catch (error) {
+    console.error("Upload avatar error:", error);
     throw error;
   }
 };
@@ -391,6 +441,32 @@ export const removePushToken = async (userId: string): Promise<void> => {
 };
 
 // ==================== NOTIFICATIONS ====================
+
+export const getCategoryFromAI = async (
+  description: string,
+): Promise<IssueCategory> => {
+  return "other";
+};
+
+export const createProvider = async (
+  name: string,
+  phone: string,
+  category: string,
+  latitude: number,
+  longitude: number
+) => {
+  const { data, error } = await supabase.from('providers').insert({
+    name,
+    phone,
+    category,
+    location: `POINT(${longitude} ${latitude})`,
+  }).select();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+  return data;
+};
 
 export const getNotifications = async (
   userId: string,

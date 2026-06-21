@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Image, TouchableOpacity, Animated } from 'react-native';
-import { Text, Surface, Chip, IconButton } from 'react-native-paper';
+import { Text, Surface, Chip, IconButton, useTheme } from 'react-native-paper';
 import { Issue, IssueCategory, IssueSeverity } from '../types';
 
 interface IssueCardProps {
@@ -9,6 +9,10 @@ interface IssueCardProps {
   onUpvote: (issueId: string) => void;
   hasUpvoted: boolean;
   isUpvoting: boolean;
+  index?: number;
+  isOwner?: boolean;
+  onDelete?: (issue: Issue) => void;
+  onResolve?: (issue: Issue) => void;
 }
 
 const categoryIcons: Record<IssueCategory, string> = {
@@ -39,30 +43,60 @@ export const IssueCard: React.FC<IssueCardProps> = ({
   onUpvote,
   hasUpvoted,
   isUpvoting,
+  index = 0,
+  isOwner = false,
+  onDelete,
+  onResolve,
 }) => {
+  const theme = useTheme();
   const timeAgo = getTimeAgo(issue.created_at);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(20)).current;
+  const translateY = useRef(new Animated.Value(50)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 4,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  };
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 400,
+        duration: 500,
+        delay: index * 100, // Stagger effect
         useNativeDriver: true,
       }),
-      Animated.timing(translateY, {
+      Animated.spring(translateY, {
         toValue: 0,
-        duration: 400,
+        tension: 50,
+        friction: 8,
+        delay: index * 100,
         useNativeDriver: true,
       })
     ]).start();
   }, []);
 
   return (
-    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY }] }}>
-      <Surface style={styles.card} elevation={1}>
-        <TouchableOpacity onPress={() => onPress(issue)} activeOpacity={0.7}>
+    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY }, { scale: scaleAnim }] }}>
+      <Surface style={[styles.card, { backgroundColor: theme.colors.surface }]} elevation={2}>
+        <TouchableOpacity 
+          onPress={() => onPress(issue)} 
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          activeOpacity={0.9}
+        >
         {/* Image */}
         {issue.image_url && (
           <Image source={{ uri: issue.image_url }} style={styles.image} />
@@ -119,16 +153,35 @@ export const IssueCard: React.FC<IssueCardProps> = ({
                 Community Verified
               </Chip>
             )}
+            <View style={{ flex: 1 }} />
+            {isOwner && issue.status !== 'Resolved' && onResolve && (
+              <IconButton
+                icon="check-circle-outline"
+                iconColor="#22C55E"
+                size={22}
+                onPress={() => onResolve(issue)}
+                style={{ margin: 0, marginRight: 8 }}
+              />
+            )}
+            {isOwner && onDelete && (
+              <IconButton
+                icon="delete-outline"
+                iconColor="#F44336"
+                size={20}
+                onPress={() => onDelete(issue)}
+                style={{ margin: 0 }}
+              />
+            )}
           </View>
 
           {/* Title */}
-          <Text variant="titleSmall" style={styles.title} numberOfLines={2}>
+          <Text variant="titleMedium" style={[styles.title, { color: theme.colors.onSurface }]} numberOfLines={2}>
             {issue.title}
           </Text>
 
           {/* Description */}
           {issue.description && (
-            <Text variant="bodySmall" style={styles.description} numberOfLines={2}>
+            <Text variant="bodyMedium" style={{ color: '#A0A0A0', marginBottom: 10, lineHeight: 20 }} numberOfLines={2}>
               {issue.description}
             </Text>
           )}
@@ -150,23 +203,23 @@ export const IssueCard: React.FC<IssueCardProps> = ({
               <View style={styles.upvoteContainer}>
                 <IconButton
                   icon={hasUpvoted ? 'arrow-up-bold' : 'arrow-up-bold-outline'}
-                  iconColor={hasUpvoted ? '#1B5E20' : '#757575'}
-                  size={20}
+                  iconColor={hasUpvoted ? theme.colors.primary : '#A0A0A0'}
+                  size={22}
                   onPress={() => onUpvote(issue.id)}
                   disabled={isUpvoting}
                 />
                 <Text
                   style={[
                     styles.upvoteCount,
-                    { color: hasUpvoted ? '#1B5E20' : '#757575' },
+                    { color: hasUpvoted ? theme.colors.primary : '#A0A0A0' },
                   ]}
                 >
                   {issue.upvote_count || 0}
                 </Text>
               </View>
               <View style={styles.commentContainer}>
-                <IconButton icon="comment-outline" iconColor="#757575" size={18} />
-                <Text style={styles.commentCount}>
+                <IconButton icon="comment-outline" iconColor="#A0A0A0" size={20} />
+                <Text style={[styles.commentCount, { color: '#A0A0A0' }]}>
                   {issue.comment_count || 0}
                 </Text>
               </View>
@@ -197,16 +250,15 @@ const getTimeAgo = (dateString: string): string => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
+    borderColor: 'rgba(255,255,255,0.08)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 6,
     overflow: 'hidden',
   },
   image: {
@@ -225,7 +277,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   categoryChip: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     height: 28,
   },
   categoryText: {

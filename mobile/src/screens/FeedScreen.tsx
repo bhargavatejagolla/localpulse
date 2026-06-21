@@ -1,15 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl, ScrollView } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl, ScrollView, Animated, TouchableOpacity } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Text, ActivityIndicator, Button, SegmentedButtons, Surface, Chip } from 'react-native-paper';
-import MapView, { Marker, Circle, PROVIDER_DEFAULT } from 'react-native-maps';
+import { BlurView } from 'expo-blur';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocationContext } from '../hooks/useLocationContext';
 import { useAuth } from '../hooks/useAuth';
 import { RadiusPicker } from '../components/RadiusPicker';
 import { IssueCard } from '../components/IssueCard';
 import { SkeletonCard } from '../components/SkeletonCard';
-import { getIssuesWithinRadius, toggleUpvote, hasUserUpvoted } from '../services/database';
+import { AnimatedEmptyState } from '../components/AnimatedEmptyState';
+import { AnimatedBackground } from '../components/AnimatedBackground';
+import { LeafletMap } from '../components/LeafletMap';
+import { getAllIssues, toggleUpvote, hasUserUpvoted } from '../services/database';
 import { supabase } from '../lib/supabase';
 import { Issue } from '../types';
+import { useNotifications } from '../hooks/NotificationContext';
+import { NotificationModal } from '../components/NotificationModal';
+import { Badge } from 'react-native-paper';
 
 export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { location, radius, loading: locationLoading, error, refreshLocation, radiusInMeters } = useLocationContext();
@@ -19,19 +27,41 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [upvotingIds, setUpvotingIds] = useState<Set<string>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'map' | 'heatmap'>('list');
   const [sortBy, setSortBy] = useState<'recent' | 'top_voted'>('recent');
   const [quickFilter, setQuickFilter] = useState<string>('all');
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const { unreadCount } = useNotifications();
+
+  // Animation for Header
+  const headerAnim = React.useRef(new Animated.Value(0)).current;
+  const pulseAnim = React.useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.spring(headerAnim, {
+      toValue: 1,
+      tension: 40,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.05, duration: 1500, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1500, useNativeDriver: true })
+      ])
+    ).start();
+  }, []);
 
   const fetchIssues = useCallback(async () => {
     if (!location) return;
     
     try {
-      const data = await getIssuesWithinRadius(
-        location.latitude,
-        location.longitude,
-        radiusInMeters
-      );
+      // For hackathon presentation, we fetch ALL issues globally to prevent the radius 
+      // filter from hiding reports if the user's GPS is far from the tapped map location.
+      const data = await getAllIssues();
       
       let sortedData = data || [];
       if (sortBy === 'top_voted') {
@@ -49,14 +79,20 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     }
   }, [location, radiusInMeters]);
 
-  useEffect(() => {
-    if (location) {
-      setLoading(true);
-      fetchIssues();
-    }
+  useFocusEffect(
+    useCallback(() => {
+      if (location) {
+        setLoading(true);
+        fetchIssues();
+      }
+    }, [location, fetchIssues])
+  );
 
+  useEffect(() => {
+    // Only subscribe to refresh the feed list when a new issue occurs, 
+    // but NotificationContext handles the actual global alert & sound.
     const channel = supabase
-      .channel('public:issues')
+      .channel('feed:issues')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'issues' },
@@ -100,6 +136,57 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     navigation.navigate('IssueDetail', { issueId: issue.id });
   };
 
+  const handleDeleteIssue = (issue: Issue) => {
+    import('react-native').then(({ Alert }) => {
+      Alert.alert(
+        "Delete Report",
+        "Are you sure you want to permanently delete this report?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Delete", 
+            style: "destructive",
+            onPress: async () => {
+              try {
+                const { error } = await supabase.from('issues').delete().eq('id', issue.id);
+                if (error) throw error;
+                fetchIssues();
+              } catch (e: any) {
+                console.error('Delete error', e);
+              }
+            }
+          }
+        ]
+      );
+    });
+  };
+
+  const handleResolveIssue = (issue: Issue) => {
+    import('react-native').then(({ Alert }) => {
+      Alert.alert(
+        "Resolve Report",
+        "Are you sure you want to mark this report as Resolved?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Resolve", 
+            style: "default",
+            onPress: async () => {
+              try {
+                const { error } = await supabase.from('issues').update({ status: 'Resolved' }).eq('id', issue.id);
+                if (error) throw error;
+                Alert.alert('🎉 Incredible!', 'Thank you for resolving this issue! You have earned 100 Civic XP!');
+                fetchIssues();
+              } catch (e: any) {
+                console.error('Resolve error', e);
+              }
+            }
+          }
+        ]
+      );
+    });
+  };
+
   if (locationLoading || loading) {
     return (
       <View style={styles.container}>
@@ -114,172 +201,185 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <RadiusPicker />
+      {/* Background for Dark Mode */}
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: '#120F17' }]} />
 
-      {error && (
-        <View style={styles.errorBanner}>
-          <Text variant="bodySmall" style={styles.errorText}>
-            ⚠️ {error}
-          </Text>
-          <Button mode="text" compact onPress={refreshLocation} textColor="#E65100">
-            Retry
-          </Button>
+      <FlatList
+        data={viewMode === 'list' ? issues.filter(i => quickFilter === 'all' || i.category === quickFilter) : []}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item, index }) => (
+          <IssueCard
+            issue={item}
+            onPress={handleIssuePress}
+            onUpvote={handleUpvote}
+            hasUpvoted={false} // Will improve in Phase 3
+            isUpvoting={upvotingIds.has(item.id)}
+            index={index}
+            isOwner={user?.id === item.user_id}
+            onDelete={handleDeleteIssue}
+            onResolve={handleResolveIssue}
+          />
+        )}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#22C55E']} // Neon Green
+            tintColor="#22C55E"
+            progressViewOffset={200}
+          />
+        }
+        ListEmptyComponent={
+          viewMode === 'list' ? (
+          <Surface style={[styles.emptyState, { borderRadius: 16, backgroundColor: '#111827', elevation: 2, margin: 16 }]} elevation={2}>
+            <AnimatedEmptyState 
+              icon="shield-check" 
+              title="You're in a Safe Zone!" 
+              subtitle="No civic issues reported within this radius. Found something? Be the first to report it and help your community."
+            />
+            <Button mode="contained" onPress={() => navigation.navigate('Report')} style={{ backgroundColor: '#22C55E' }} textColor="#0B1120">
+              Report an Issue
+            </Button>
+          </Surface>
+          ) : null
+        }
+        showsVerticalScrollIndicator={false}
+      />
+
+      {/* Floating Glassmorphism Header */}
+      <Animated.View style={[styles.headerAbsolute, {
+        opacity: headerAnim,
+        transform: [{
+          translateY: headerAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [-200, 0],
+          })
+        }]
+      }]}>
+        <View style={StyleSheet.absoluteFill}>
+          <AnimatedBackground colors={['#166534', '#22C55E', '#0B1120']} style="lightfall" />
         </View>
-      )}
+        <BlurView intensity={80} tint="dark" style={[styles.headerBlur, { paddingTop: 50, paddingBottom: 10 }]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, marginBottom: 12 }}>
+            <Text variant="titleLarge" style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Community Feed</Text>
+            
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+              {/* Notification Bell */}
+              <TouchableOpacity onPress={() => setShowNotifications(true)} style={styles.bellContainer}>
+                <MaterialCommunityIcons name="bell-outline" size={26} color="#A0A0A0" />
+                {unreadCount > 0 && (
+                  <Badge size={18} style={styles.badge}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Badge>
+                )}
+              </TouchableOpacity>
 
-      <View style={styles.toggleContainer}>
-        <SegmentedButtons
-          value={sortBy}
-          onValueChange={(value) => { setSortBy(value as 'recent' | 'top_voted'); fetchIssues(); }}
-          style={{ marginBottom: 10 }}
-          buttons={[
-            { value: 'recent', label: 'Recent', icon: 'clock-outline' },
-            { value: 'top_voted', label: 'Top Voted', icon: 'arrow-up-bold' },
-          ]}
-        />
-        <SegmentedButtons
-          value={viewMode}
-          onValueChange={(value) => setViewMode(value as 'list' | 'map' | 'heatmap')}
-          buttons={[
-            { value: 'list', label: 'List', icon: 'format-list-bulleted' },
-            { value: 'map', label: 'Map', icon: 'map' },
-            { value: 'heatmap', label: 'Heatmap', icon: 'fire' },
-          ]}
-        />
-      </View>
-
-      <View style={styles.quickFiltersContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickFilters}>
-          <Chip style={styles.filterChip} selected={quickFilter === 'all'} onPress={() => setQuickFilter('all')}>All</Chip>
-          <Chip style={styles.filterChip} selected={quickFilter === 'roads'} onPress={() => setQuickFilter('roads')}>🛣️ Roads</Chip>
-          <Chip style={styles.filterChip} selected={quickFilter === 'water'} onPress={() => setQuickFilter('water')}>💧 Water</Chip>
-          <Chip style={styles.filterChip} selected={quickFilter === 'electricity'} onPress={() => setQuickFilter('electricity')}>⚡ Electric</Chip>
-          <Chip style={styles.filterChip} selected={quickFilter === 'safety'} onPress={() => setQuickFilter('safety')}>🛡️ Safety</Chip>
-          <Chip style={styles.filterChip} selected={quickFilter === 'sanitation'} onPress={() => setQuickFilter('sanitation')}>🧹 Sanitation</Chip>
-        </ScrollView>
-      </View>
-
-      {(viewMode === 'map' || viewMode === 'heatmap') && location ? (
-        <View style={styles.mapContainer}>
-          <MapView
-            style={styles.map}
-            provider={PROVIDER_DEFAULT}
-            initialRegion={{
-              latitude: location.latitude,
-              longitude: location.longitude,
-              latitudeDelta: (radiusInMeters / 111320) * 2.2,
-              longitudeDelta: (radiusInMeters / (111320 * Math.cos(location.latitude * (Math.PI / 180)))) * 2.2,
-            }}
-          >
-            <Circle
-              center={{ latitude: location.latitude, longitude: location.longitude }}
-              radius={radiusInMeters}
-              fillColor="rgba(27, 94, 32, 0.1)"
-              strokeColor="#1B5E20"
-            />
-            <Marker
-              coordinate={{ latitude: location.latitude, longitude: location.longitude }}
-              title="You are here"
-              pinColor="blue"
-            />
-            {viewMode === 'heatmap' ? (
-              issues.map((issue) => {
-                let lng = 0; let lat = 0;
-                if (typeof issue.location === 'string') {
-                  const match = (issue.location as string).match(/POINT\(([^ ]+) ([^ ]+)\)/);
-                  if (match) { lng = parseFloat(match[1]); lat = parseFloat(match[2]); }
-                } else if (issue.location && typeof issue.location === 'object') {
-                  lng = (issue.location as any).coordinates[0];
-                  lat = (issue.location as any).coordinates[1];
-                }
-                if (lat === 0 || lng === 0) return null;
-
-                const getHeatColor = () => {
-                  switch (issue.severity) {
-                    case 'critical': return 'rgba(255, 0, 0, 0.3)';
-                    case 'high': return 'rgba(255, 165, 0, 0.3)';
-                    default: return 'rgba(0, 128, 0, 0.3)';
-                  }
-                };
-
-                return (
-                  <Circle
-                    key={`heat-${issue.id}`}
-                    center={{ latitude: lat, longitude: lng }}
-                    radius={150} // 150 meters coverage
-                    fillColor={getHeatColor()}
-                    strokeColor="transparent"
-                  />
-                );
-              })
-            ) : (
-              issues.map((issue) => {
-                let lng = 0; let lat = 0;
-                
-                if (typeof issue.location === 'string') {
-                  const match = (issue.location as string).match(/POINT\(([^ ]+) ([^ ]+)\)/);
-                  if (!match) return null;
-                  lng = parseFloat(match[1]);
-                  lat = parseFloat(match[2]);
-                } else if (issue.location && typeof issue.location === 'object') {
-                   lng = (issue.location as any).coordinates[0];
-                   lat = (issue.location as any).coordinates[1];
-                } else {
-                   return null;
-                }
-
-                return (
-                  <Marker
-                    key={issue.id}
-                    coordinate={{ latitude: lat, longitude: lng }}
-                    title={issue.title}
-                    description={issue.category}
-                    onCalloutPress={() => handleIssuePress(issue)}
-                    pinColor={issue.severity === 'critical' ? 'red' : issue.severity === 'high' ? 'orange' : 'green'}
-                  />
-                );
-              })
-            )}
-          </MapView>
-        </View>
-      ) : (
-        <FlatList
-          data={issues.filter(i => quickFilter === 'all' || i.category === quickFilter)}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <IssueCard
-              issue={item}
-              onPress={handleIssuePress}
-              onUpvote={handleUpvote}
-              hasUpvoted={false} // Will improve in Phase 3
-              isUpvoting={upvotingIds.has(item.id)}
-            />
+              <TouchableOpacity onPress={() => setShowFilters(!showFilters)}>
+                <MaterialCommunityIcons name={showFilters ? "close" : "filter-variant"} size={28} color="#22C55E" />
+              </TouchableOpacity>
+            </View>
+          </View>
+          
+          {showFilters && (
+            <View>
+              <RadiusPicker />
+              <View style={[styles.toggleContainer, { marginTop: 0 }]}>
+                <SegmentedButtons
+                  value={sortBy}
+                  onValueChange={(value) => { setSortBy(value as 'recent' | 'top_voted'); fetchIssues(); }}
+                  style={{ marginBottom: 10 }}
+                  buttons={[
+                    { value: 'recent', label: 'Recent', icon: 'clock-outline' },
+                    { value: 'top_voted', label: 'Top Voted', icon: 'arrow-up-bold' },
+                  ]}
+                  theme={{ colors: { secondaryContainer: 'rgba(34,197,94,0.2)', onSecondaryContainer: '#22C55E', onSurface: '#FFFFFF', outline: 'rgba(255,255,255,0.2)' } }}
+                />
+              </View>
+            </View>
           )}
-          contentContainerStyle={styles.listContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              colors={['#1B5E20']}
-            />
-          }
-          ListEmptyComponent={
-            <Surface style={[styles.emptyState, { borderRadius: 16, backgroundColor: '#FFFFFF', elevation: 2, margin: 16 }]} elevation={2}>
-              <Text variant="displayMedium">✨</Text>
-              <Text variant="titleMedium" style={[styles.emptyTitle, { color: '#1B5E20', fontWeight: 'bold' }]}>
-                You're in a Safe Zone!
-              </Text>
-              <Text variant="bodyMedium" style={styles.emptyText}>
-                No civic issues reported within this radius. Found something? Be the first to report it and help your community.
-              </Text>
-              <Button mode="contained" onPress={() => navigation.navigate('Report')} style={{ marginTop: 20, backgroundColor: '#1B5E20' }}>
-                Report an Issue
-              </Button>
-            </Surface>
-          }
-          showsVerticalScrollIndicator={false}
-        />
+
+          <View style={[styles.toggleContainer, { paddingTop: 0, marginTop: 0 }]}>
+            {/* Segmented Control */}
+            <View style={styles.segmentContainer}>
+              <SegmentedButtons
+                value={viewMode}
+                onValueChange={(val) => setViewMode(val as 'list' | 'map')}
+                buttons={[
+                  { value: 'list', label: 'Feed', icon: 'format-list-bulleted' },
+                  { value: 'map', label: 'PulseMap AI', icon: 'map-search' },
+                ]}
+                style={styles.segmentedButtons}
+                theme={{ colors: { secondaryContainer: 'rgba(34,197,94,0.2)', onSecondaryContainer: '#22C55E', onSurface: '#FFFFFF', outline: 'rgba(255,255,255,0.2)' } }}
+              />
+            </View>
+          </View>
+
+          <View style={styles.quickFiltersContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickFilters}>
+              <Chip style={[styles.filterChip, quickFilter === 'all' && styles.activeFilter]} textStyle={{ color: quickFilter === 'all' ? '#0B1120' : '#FFFFFF' }} selected={quickFilter === 'all'} onPress={() => setQuickFilter('all')}>All</Chip>
+              <Chip style={[styles.filterChip, quickFilter === 'roads' && styles.activeFilter]} textStyle={{ color: quickFilter === 'roads' ? '#0B1120' : '#FFFFFF' }} selected={quickFilter === 'roads'} onPress={() => setQuickFilter('roads')}>🛣️ Roads</Chip>
+              <Chip style={[styles.filterChip, quickFilter === 'water' && styles.activeFilter]} textStyle={{ color: quickFilter === 'water' ? '#0B1120' : '#FFFFFF' }} selected={quickFilter === 'water'} onPress={() => setQuickFilter('water')}>💧 Water</Chip>
+              <Chip style={[styles.filterChip, quickFilter === 'electricity' && styles.activeFilter]} textStyle={{ color: quickFilter === 'electricity' ? '#0B1120' : '#FFFFFF' }} selected={quickFilter === 'electricity'} onPress={() => setQuickFilter('electricity')}>⚡ Electric</Chip>
+              <Chip style={[styles.filterChip, quickFilter === 'safety' && styles.activeFilter]} textStyle={{ color: quickFilter === 'safety' ? '#0B1120' : '#FFFFFF' }} selected={quickFilter === 'safety'} onPress={() => setQuickFilter('safety')}>🛡️ Safety</Chip>
+              <Chip style={[styles.filterChip, quickFilter === 'sanitation' && styles.activeFilter]} textStyle={{ color: quickFilter === 'sanitation' ? '#0B1120' : '#FFFFFF' }} selected={quickFilter === 'sanitation'} onPress={() => setQuickFilter('sanitation')}>🧹 Sanitation</Chip>
+            </ScrollView>
+          </View>
+        </BlurView>
+      </Animated.View>
+
+      {/* Map Views */}
+      {(viewMode === 'map' || viewMode === 'heatmap') && location && (
+        <Animated.View style={StyleSheet.absoluteFill}>
+          <LeafletMap
+            center={{ latitude: location.latitude, longitude: location.longitude }}
+            radiusInMeters={radiusInMeters}
+            issues={issues}
+            mode={viewMode === 'heatmap' ? 'heatmap' : 'feed'}
+            onIssuePress={(id) => {
+              const issue = issues.find(i => i.id === id);
+              if (issue) handleIssuePress(issue);
+            }}
+          />
+        </Animated.View>
       )}
+
+      {/* Floating Action Buttons */}
+      <View style={styles.fabContainer}>
+        {/* Copilot AI Button */}
+        <Animated.View style={[{ transform: [{ scale: pulseAnim }], marginBottom: 16 }]}>
+          <Surface style={[styles.fabSurface, { backgroundColor: '#111827', borderColor: '#22C55E', borderWidth: 1 }]} elevation={4}>
+            <TouchableOpacity 
+              style={styles.fab} 
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('Copilot')}
+            >
+              <MaterialCommunityIcons name="robot" size={24} color="#22C55E" />
+              <Text style={[styles.fabText, { color: '#22C55E', fontSize: 14 }]}>Ask AI</Text>
+            </TouchableOpacity>
+          </Surface>
+        </Animated.View>
+
+        {/* Report Button */}
+        <Animated.View style={[{ transform: [{ scale: pulseAnim }] }]}>
+          <Surface style={styles.fabSurface} elevation={4}>
+            <TouchableOpacity 
+              style={styles.fab} 
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('Report')}
+            >
+              <MaterialCommunityIcons name="plus" size={28} color="#0B1120" />
+              <Text style={styles.fabText}>Report</Text>
+            </TouchableOpacity>
+          </Surface>
+        </Animated.View>
+      </View>
+
+      {/* Notification Modal */}
+      <NotificationModal 
+        visible={showNotifications} 
+        onDismiss={() => setShowNotifications(false)} 
+      />
     </View>
   );
 };
@@ -287,31 +387,73 @@ export const FeedScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#0B1120',
+  },
+  headerAbsolute: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  headerBlur: {
+    paddingTop: 50, // Safe area + spacing
+    paddingBottom: 16,
   },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#0B1120',
   },
   loadingText: {
-    color: '#757575',
+    color: '#A0A0A0',
     marginBottom: 16,
   },
   quickFiltersContainer: {
-    marginBottom: 12,
+    marginTop: 4,
   },
   quickFilters: {
     paddingHorizontal: 16,
     gap: 8,
   },
   filterChip: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1,
   },
-  errorBanner: {
-    backgroundColor: '#FFF3E0',
-    padding: 12,
+  activeFilter: {
+    backgroundColor: '#22C55E',
+    borderColor: '#22C55E',
+  },
+  headerTitle: {
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    letterSpacing: -0.5,
+  },
+  bellContainer: {
+    position: 'relative',
+    padding: 4,
+  },
+  badge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#F44336',
+    color: '#FFF',
+    fontWeight: 'bold',
+  },
+  filterSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -322,6 +464,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
+    paddingTop: 180, // Reduced from 240 since header is smaller
     paddingBottom: 80,
   },
   emptyState: {
@@ -342,20 +485,41 @@ const styles = StyleSheet.create({
   toggleContainer: {
     paddingHorizontal: 16,
     paddingBottom: 8,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    marginTop: 10,
   },
   mapContainer: {
-    flex: 1,
-    margin: 16,
-    borderRadius: 12,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
   },
-  map: {
-    width: '100%',
-    height: '100%',
+  customPin: {
+    backgroundColor: '#111827',
+    padding: 6,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#22C55E',
+  },
+  pinEmoji: {
+    fontSize: 16,
+  },
+  fabContainer: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+  },
+  fabSurface: {
+    borderRadius: 30,
+    backgroundColor: '#22C55E', // Neon Green
+  },
+  fab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  fabText: {
+    color: '#0B1120',
+    fontWeight: 'bold',
+    marginLeft: 4,
+    fontSize: 16,
   },
 });

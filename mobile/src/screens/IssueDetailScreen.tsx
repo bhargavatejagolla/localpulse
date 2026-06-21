@@ -8,6 +8,10 @@ import {
   RefreshControl,
   TouchableOpacity,
   Modal,
+  Keyboard,
+  Animated,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import {
   Text,
@@ -19,9 +23,10 @@ import {
   ActivityIndicator,
   Divider,
 } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import { Issue, Comment, IssueCategory, IssueSeverity } from '../types';
-import { getIssueById, toggleUpvote } from '../services/database';
+import { getIssueById, toggleUpvote, updateIssueStatus } from '../services/database';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 
@@ -66,6 +71,10 @@ export const IssueDetailScreen = ({ route, navigation }: any) => {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [upvoting, setUpvoting] = useState(false);
   const [isZoomVisible, setIsZoomVisible] = useState(false);
+
+  // Animations
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const slideAnim = React.useRef(new Animated.Value(30)).current;
 
   const fetchIssue = useCallback(async () => {
     if (!issueId) return;
@@ -116,6 +125,20 @@ export const IssueDetailScreen = ({ route, navigation }: any) => {
       setLoading(true);
       await Promise.all([fetchIssue(), fetchComments(), checkUpvote()]);
       setLoading(false);
+      
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 40,
+          friction: 8,
+          useNativeDriver: true,
+        })
+      ]).start();
     };
     loadData();
   }, [fetchIssue, fetchComments, checkUpvote]);
@@ -158,6 +181,60 @@ export const IssueDetailScreen = ({ route, navigation }: any) => {
     }
   };
 
+  const handleResolve = async () => {
+    if (!issue || !user) return;
+    Alert.alert(
+      "Resolve Issue",
+      "Are you sure you want to mark this issue as Resolved?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Resolve",
+          style: "default",
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await supabase.from('issues').update({ status: 'Resolved' }).eq('id', issue.id);
+              Alert.alert('🎉 Incredible!', 'Thank you for making your community a better place! You have earned 100 Civic XP!');
+              fetchIssue();
+            } catch (error) {
+              console.error(error);
+              Alert.alert('Error', 'Failed to resolve issue.');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleDelete = async () => {
+    if (!issue || !user || issue.user_id !== user.id) return;
+    Alert.alert(
+      "Withdraw Issue",
+      "Are you sure you want to withdraw this report? This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Withdraw",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await supabase.from('issues').delete().eq('id', issue.id);
+              navigation.goBack();
+            } catch (error) {
+              console.error(error);
+              Alert.alert('Error', 'Failed to withdraw issue.');
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const handleAddComment = async () => {
     if (!newComment.trim() || !user || !issue) return;
     setSubmittingComment(true);
@@ -172,7 +249,7 @@ export const IssueDetailScreen = ({ route, navigation }: any) => {
       if (error) throw error;
 
       setNewComment('');
-      // Update comment count locally
+      Keyboard.dismiss();
       if (issue) {
         setIssue({ ...issue, comment_count: (issue.comment_count || 0) + 1 });
       }
@@ -208,7 +285,7 @@ export const IssueDetailScreen = ({ route, navigation }: any) => {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#1B5E20" />
+        <ActivityIndicator size="large" color="#22C55E" />
       </View>
     );
   }
@@ -216,8 +293,8 @@ export const IssueDetailScreen = ({ route, navigation }: any) => {
   if (!issue) {
     return (
       <View style={styles.center}>
-        <Text variant="bodyLarge">Issue not found</Text>
-        <Button mode="text" onPress={() => navigation.goBack()}>
+        <Text variant="bodyLarge" style={{ color: '#A0A0A0' }}>Issue not found</Text>
+        <Button mode="text" textColor="#22C55E" onPress={() => navigation.goBack()}>
           Go Back
         </Button>
       </View>
@@ -225,12 +302,17 @@ export const IssueDetailScreen = ({ route, navigation }: any) => {
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
+      <Animated.ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#1B5E20']} />
         }
+        style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
       >
         {/* Issue Image */}
         {issue.image_url && (
@@ -259,6 +341,25 @@ export const IssueDetailScreen = ({ route, navigation }: any) => {
             </View>
           </View>
 
+          {/* AI Timeline */}
+          <Surface style={styles.section} elevation={1}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              🤖 AI Timeline
+            </Text>
+            <View style={styles.timelineItem}>
+              <MaterialCommunityIcons name="clock-outline" size={16} color="#A0A0A0" />
+              <Text style={styles.timelineText}>{getTimeAgo(issue.created_at)} - Reported by Citizen</Text>
+            </View>
+            <View style={styles.timelineItem}>
+              <MaterialCommunityIcons name="check-circle-outline" size={16} color="#22C55E" />
+              <Text style={styles.timelineText}>AI Classified Category</Text>
+            </View>
+            <View style={styles.timelineItem}>
+              <MaterialCommunityIcons name="alert-circle-outline" size={16} color={severityColors[issue.severity]} />
+              <Text style={styles.timelineText}>AI Severity Estimated</Text>
+            </View>
+          </Surface>
+
           {/* Title */}
           <Text variant="headlineSmall" style={styles.title}>
             {issue.title}
@@ -283,25 +384,54 @@ export const IssueDetailScreen = ({ route, navigation }: any) => {
             )}
           </View>
 
-          {/* Upvote & Comment Counts */}
+          {/* Action Row */}
           <View style={styles.actionRow}>
-            <View style={styles.actionItem}>
-              <IconButton
-                icon={hasUpvoted ? 'arrow-up-bold' : 'arrow-up-bold-outline'}
-                iconColor={hasUpvoted ? '#1B5E20' : '#757575'}
-                size={28}
-                onPress={handleUpvote}
-                disabled={upvoting}
-              />
-              <Text style={[styles.actionCount, { color: hasUpvoted ? '#1B5E20' : '#757575' }]}>
-                {upvoteCount}
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={styles.actionItem}>
+                <IconButton
+                  icon={hasUpvoted ? 'arrow-up-bold' : 'arrow-up-bold-outline'}
+                  iconColor={hasUpvoted ? '#22C55E' : '#757575'}
+                  size={28}
+                  onPress={handleUpvote}
+                  disabled={upvoting}
+                />
+                <Text style={[styles.actionCount, { color: hasUpvoted ? '#22C55E' : '#757575' }]}>
+                  {upvoteCount}
+                </Text>
+              </View>
+              <View style={styles.actionItem}>
+                <IconButton icon="comment-outline" iconColor="#A0A0A0" size={24} />
+                <Text style={styles.actionCount}>{issue.comment_count || 0}</Text>
+              </View>
             </View>
-            <View style={styles.actionItem}>
-              <IconButton icon="comment-outline" iconColor="#757575" size={24} />
-              <Text style={styles.actionCount}>{issue.comment_count || 0}</Text>
-            </View>
+
+            {/* Withdraw Action (Creator only) */}
+            {user?.id === issue.user_id && issue.status !== 'Resolved' && (
+              <Button 
+                mode="text" 
+                textColor="#F44336" 
+                icon="delete-outline" 
+                onPress={handleDelete}
+              >
+                Withdraw
+              </Button>
+            )}
           </View>
+          
+          {/* Resolve Action */}
+          {issue.status !== 'Resolved' && (user?.id === issue.user_id || user?.user_metadata?.role === 'authority') && (
+            <Button
+              mode="contained"
+              buttonColor="#22C55E"
+              textColor="#0B1120"
+              icon="check-decagram"
+              style={{ marginTop: 16, borderRadius: 12, paddingVertical: 4 }}
+              labelStyle={{ fontWeight: 'bold', fontSize: 16 }}
+              onPress={handleResolve}
+            >
+              Mark as Resolved (+100 XP)
+            </Button>
+          )}
         </Surface>
 
         {/* Comments Section */}
@@ -318,26 +448,35 @@ export const IssueDetailScreen = ({ route, navigation }: any) => {
               </Text>
             </View>
           ) : (
-            comments.map((comment) => (
-              <View key={comment.id} style={styles.commentItem}>
+            comments.map((comment, index) => (
+              <Animated.View key={comment.id} style={[styles.commentItem, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
                 <View style={styles.commentHeader}>
-                  <Text variant="labelMedium" style={styles.commentAuthor}>
-                    {comment.profiles?.full_name || 'Anonymous'}
-                  </Text>
-                  <Text variant="labelSmall" style={styles.commentTime}>
-                    {getTimeAgo(comment.created_at)}
-                  </Text>
+                  <Avatar.Text 
+                    size={28} 
+                    label={comment.profiles?.full_name?.charAt(0) || 'A'} 
+                    style={{ backgroundColor: 'rgba(34,197,94,0.2)', marginRight: 12 }} 
+                    color="#22C55E" 
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text variant="labelMedium" style={styles.commentAuthor}>
+                      {comment.profiles?.full_name || 'Anonymous Civic Hero'}
+                    </Text>
+                    <Text variant="labelSmall" style={styles.commentTime}>
+                      {getTimeAgo(comment.created_at)}
+                    </Text>
+                  </View>
                 </View>
-                <Text variant="bodyMedium" style={styles.commentText}>
-                  {comment.text}
-                </Text>
-                <Divider style={styles.commentDivider} />
-              </View>
+                <Surface style={styles.commentBubble} elevation={0}>
+                  <Text variant="bodyMedium" style={styles.commentText}>
+                    {comment.text}
+                  </Text>
+                </Surface>
+              </Animated.View>
             ))
           )}
         </Surface>
         <View style={{ height: 100 }} />
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Image Zoom Modal */}
       {issue.image_url && (
@@ -375,26 +514,28 @@ export const IssueDetailScreen = ({ route, navigation }: any) => {
                 icon="send"
                 onPress={handleAddComment}
                 disabled={!newComment.trim() || submittingComment}
-                color={newComment.trim() ? '#1B5E20' : '#BDBDBD'}
+                color={newComment.trim() ? '#22C55E' : '#A0A0A0'}
               />
             }
             onSubmitEditing={handleAddComment}
+            theme={{ colors: { onSurfaceVariant: '#FFFFFF', primary: '#22C55E' } }}
           />
         </View>
       </Surface>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#0B1120',
   },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#0B1120',
   },
   scrollContent: {
     paddingBottom: 80,
@@ -405,10 +546,12 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   detailSection: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#111827',
     margin: 16,
     padding: 16,
     borderRadius: 12,
+    borderColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
   },
   badgeRow: {
     flexDirection: 'row',
@@ -418,11 +561,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   categoryChip: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     height: 30,
   },
   categoryText: {
     fontSize: 12,
+    color: '#FFFFFF',
   },
   severityChip: {
     height: 30,
@@ -436,13 +580,34 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
+  section: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: '#FFFFFF',
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  timelineText: {
+    color: '#A0A0A0',
+    fontSize: 13,
+    marginLeft: 8,
+  },
   title: {
-    color: '#212121',
+    color: '#FFFFFF',
     fontWeight: '700',
     marginBottom: 8,
   },
   description: {
-    color: '#616161',
+    color: '#A0A0A0',
     lineHeight: 22,
     marginBottom: 12,
   },
@@ -452,10 +617,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   metaText: {
-    color: '#9E9E9E',
+    color: '#757575',
   },
   anonymousText: {
-    color: '#9E9E9E',
+    color: '#757575',
     fontStyle: 'italic',
   },
   actionRow: {
@@ -463,7 +628,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: 'rgba(255,255,255,0.1)',
     paddingTop: 12,
   },
   actionItem: {
@@ -474,61 +639,70 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: -4,
+    color: '#FFFFFF'
   },
   commentsSection: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#111827',
     marginHorizontal: 16,
     marginBottom: 16,
     padding: 16,
     borderRadius: 12,
+    borderColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
   },
   commentsTitle: {
-    color: '#212121',
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   divider: {
     marginVertical: 12,
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   emptyComments: {
     paddingVertical: 20,
     alignItems: 'center',
   },
   emptyText: {
-    color: '#9E9E9E',
+    color: '#A0A0A0',
   },
   commentItem: {
-    marginBottom: 4,
+    marginBottom: 20,
   },
   commentHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   commentAuthor: {
-    color: '#1B5E20',
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
   commentTime: {
-    color: '#BDBDBD',
+    color: '#757575',
+  },
+  commentBubble: {
+    backgroundColor: '#1F2937',
+    padding: 12,
+    borderRadius: 16,
+    borderTopLeftRadius: 4,
+    marginLeft: 40,
   },
   commentText: {
-    color: '#424242',
-    marginBottom: 8,
+    color: '#E0E0E0',
+    lineHeight: 20,
   },
   commentDivider: {
-    marginBottom: 8,
-    backgroundColor: '#F5F5F5',
+    display: 'none',
   },
   commentInputContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0B1120',
     padding: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    borderTopColor: 'rgba(255,255,255,0.05)',
   },
   commentInputRow: {
     flexDirection: 'row',
@@ -536,6 +710,6 @@ const styles = StyleSheet.create({
   },
   commentInput: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#111827',
   },
 });
