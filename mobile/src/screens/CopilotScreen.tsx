@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { View, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Animated, TouchableOpacity } from 'react-native';
 import { Text, TextInput, Surface, ActivityIndicator, IconButton } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -41,11 +42,15 @@ export const CopilotScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         Animated.timing(floatAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
       ])
     ).start();
-
-    getAllIssues()
-      .then(setLocalIssues)
-      .catch(console.error);
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      getAllIssues()
+        .then(setLocalIssues)
+        .catch(console.error);
+    }, [])
+  );
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
