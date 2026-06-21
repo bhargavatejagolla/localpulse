@@ -134,6 +134,13 @@ graph TD
 
 ---
 
+## 📥 Download & Demo
+
+- **Drive Submission:** [Project Files & Assets](https://drive.google.com/drive/folders/1XYEfJ4NUL0QXT_6RSESG382ISleoco7y?usp=drive_link)
+- **APK Download:** [Download LocalPulse APK](https://github.com/bhargavatejagolla/localpulse/raw/develop/LocalPulse.apk)
+
+---
+
 ## 🙏 Acknowledgements
 
 Built with ❤️ by **Team Quantum Quotients** for **DevFusion 3.O | The Developers Hackathon**.
