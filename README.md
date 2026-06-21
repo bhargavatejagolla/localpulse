@@ -32,19 +32,24 @@ By leveraging **Google Gemini AI** and **Real-Time Geospatial Tracking**, citize
 <h2 align="center">✨ Live App Gallery</h2>
 
 <p align="center">
-  <img src="image1.jpg" width="32%" alt="Feed Screen"/>
-  <img src="image2.jpg" width="32%" alt="Map View"/>
-  <img src="image3.jpg" width="32%" alt="AI Analytics"/>
+  <img src="image1.png" width="32%" alt="Screenshot 1"/>
+  <img src="image1.2.png" width="32%" alt="Screenshot 2"/>
+  <img src="image2.jpg" width="32%" alt="Screenshot 3"/>
 </p>
 <p align="center">
-  <img src="image4.jpg" width="32%" alt="Report Issue"/>
-  <img src="image5.jpg" width="32%" alt="Notifications"/>
-  <img src="image6.jpg" width="32%" alt="Profile View"/>
+  <img src="image3.jpg" width="32%" alt="Screenshot 4"/>
+  <img src="image4.jpg" width="32%" alt="Screenshot 5"/>
+  <img src="image5.jpg" width="32%" alt="Screenshot 6"/>
 </p>
 <p align="center">
-  <img src="image7.jpg" width="32%" alt="Leaderboard"/>
-  <img src="image8.jpg" width="32%" alt="AI Detail"/>
-  <img src="image9.jpeg" width="32%" alt="Success Modal"/>
+  <img src="image5.2.png" width="32%" alt="Screenshot 7"/>
+  <img src="image6.jpg" width="32%" alt="Screenshot 8"/>
+  <img src="image7.jpg" width="32%" alt="Screenshot 9"/>
+</p>
+<p align="center">
+  <img src="image8.jpg" width="32%" alt="Screenshot 10"/>
+  <img src="image9.jpeg" width="32%" alt="Screenshot 11"/>
+  <img src="image10.jpg" width="32%" alt="Screenshot 12"/>
 </p>
 
 ---
