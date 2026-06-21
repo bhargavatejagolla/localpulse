@@ -107,7 +107,7 @@ graph TD
 ### Installation
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/localpulse.git
+   git clone https://github.com/bhargavatejagolla/localpulse.git
    cd localpulse
    ```
 
