@@ -17,7 +17,6 @@
 ---
 
 ## 🚨 The Problem
-<img src="https://user-images.githubusercontent.com/74038190/212745723-c7c386dc-108c-4a50-9c76-0f90afb2c0fa.gif" width="150" align="right">
 
 Modern cities face a severe disconnect between citizens and local authorities. When a civic issue occurs—such as a broken water pipe, an open manhole, or a power outage—citizens struggle with:
 - **Fragmented Reporting:** Unclear channels on exactly who to contact.
