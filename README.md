@@ -142,7 +142,7 @@ graph TD
 ## 📥 Download & Demo
 
 - **Drive Submission:** [Project Files & Assets](https://drive.google.com/drive/folders/1XYEfJ4NUL0QXT_6RSESG382ISleoco7y?usp=drive_link)
-- **APK Download:** [Download LocalPulse APK](https://github.com/bhargavatejagolla/localpulse/raw/develop/LocalPulse.apk)
+- **APK Download:** [Download LocalPulse APK](https://drive.google.com/file/d/1gnljj-1znySw1WRB_cp8xZcilts-iDoo/view?usp=drive_link)
 
 ---
 
