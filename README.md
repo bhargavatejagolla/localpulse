@@ -1,28 +1,39 @@
 <div align="center">
-  <img src="./mobile/assets/logo.png" alt="LocalPulse Logo" width="120" />
+  <img src="./mobile/assets/logo.png" alt="LocalPulse Logo" width="150" />
   
-  # LocalPulse
+  # 🏙️ LocalPulse
   **Your Neighbourhood, Connected.**
   
-  [![React Native](https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactnative.dev/)
-  [![Expo](https://img.shields.io/badge/Expo-1B1F23?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev/)
-  [![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
-  [![Gemini AI](https://img.shields.io/badge/Google_Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
+  <p align="center">
+    <a href="https://reactnative.dev/"><img src="https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React Native"/></a>
+    <a href="https://expo.dev/"><img src="https://img.shields.io/badge/Expo-1B1F23?style=for-the-badge&logo=expo&logoColor=white" alt="Expo"/></a>
+    <a href="https://supabase.com/"><img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase"/></a>
+    <a href="https://deepmind.google/technologies/gemini/"><img src="https://img.shields.io/badge/Google_Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Gemini AI"/></a>
+  </p>
+  
+  <p align="center">
+    <img src="https://img.shields.io/badge/Status-Active-success.svg?style=flat-square" alt="Status">
+    <img src="https://img.shields.io/badge/Platform-iOS%20%7C%20Android-lightgrey.svg?style=flat-square" alt="Platform">
+    <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License">
+    <img src="https://img.shields.io/badge/Hackathon-DevFusion_3.0-orange.svg?style=flat-square" alt="Hackathon">
+  </p>
 
   *A next-generation civic engagement platform that empowers citizens to report, track, and resolve local issues in real-time, powered by AI and Gamification.*
 </div>
 
 ---
 
-## 🚨 The Problem
+## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Smilies/Hot%20Face.png" alt="Hot Face" width="25" /> The Problem
 
 Modern cities face a severe disconnect between citizens and local authorities. When a civic issue occurs—such as a broken water pipe, an open manhole, or a power outage—citizens struggle with:
-- **Fragmented Reporting:** Unclear channels on exactly who to contact.
-- **Lack of Transparency:** No way to track if an issue is being seen or resolved.
-- **Duplicate Complaints:** Authorities are flooded with redundant reports for the exact same issue.
-- **Apathy:** Citizens feel their voice doesn't matter, leading to the "bystander effect" where no one reports critical infrastructure damage.
 
-## 💡 Our Solution: LocalPulse
+- 🌪️ **Fragmented Reporting:** Unclear channels on exactly who to contact.
+- 🌫️ **Lack of Transparency:** No way to track if an issue is being seen or resolved.
+- 🔁 **Duplicate Complaints:** Authorities are flooded with redundant reports for the exact same issue.
+- 🤷‍♂️ **Apathy:** Citizens feel their voice doesn't matter, leading to the "bystander effect" where no one reports critical infrastructure damage.
+
+## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Light%20Bulb.png" alt="Light Bulb" width="25" /> Our Solution: LocalPulse
+
 LocalPulse bridges the gap by turning civic reporting into a seamless, intelligent, and rewarding community experience. 
 
 By leveraging **Google Gemini AI** and **Real-Time Geospatial Tracking**, citizens can simply snap a photo of a problem. The AI automatically classifies the issue, assesses its severity, and broadcasts it to the entire neighbourhood. LocalPulse prevents duplicate reports through intelligent clustering and incentivizes community participation through a robust gamification system.
@@ -54,45 +65,46 @@ By leveraging **Google Gemini AI** and **Real-Time Geospatial Tracking**, citize
 
 ---
 
-## 🔍 In-Depth Clarity: Core Features
+## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Magnifying%20Glass%20Tilted%20Right.png" alt="Magnifying Glass" width="25" /> In-Depth Clarity: Core Features
 
-### 📸 AI Auto-Classification & Triage
+### <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Camera.png" alt="Camera" width="20" /> AI Auto-Classification & Triage
 We integrated **Google Gemini Pro Vision** to remove the friction of reporting. Users simply upload a photo, and the AI analyzes the visual damage to:
-- Automatically assign the correct category (e.g., Roads, Electricity, Sanitation).
-- Determine the exact severity level (Low, Medium, High, Critical).
-- Provide a clear, structured summary of the problem.
+- 🤖 Automatically assign the correct category (e.g., Roads, Electricity, Sanitation).
+- 🚨 Determine the exact severity level (Low, Medium, High, Critical).
+- 📝 Provide a clear, structured summary of the problem.
 
-### 📍 Precision Geospatial Tracking & Heatmaps
+### <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Round%20Pushpin.png" alt="Pushpin" width="20" /> Precision Geospatial Tracking & Heatmaps
 Built on lightweight **OpenStreetMap** architecture, LocalPulse features a zero-lag interactive map. 
-- **Radius Tracking:** Users only see issues strictly within their geographic radius, eliminating noise.
-- **Live Heatmaps:** Visual cluster mapping instantly highlights severely degraded zones in the city.
+- 🎯 **Radius Tracking:** Users only see issues strictly within their geographic radius, eliminating noise.
+- 🗺️ **Live Heatmaps:** Visual cluster mapping instantly highlights severely degraded zones in the city.
 
-### 🔔 Global Real-Time Notification Engine
+### <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Bell.png" alt="Bell" width="20" /> Global Real-Time Notification Engine
 When a high-severity issue is logged, our **Supabase Postgres logical replication** instantly triggers a global push notification. Every user in the radius receives a sliding modal alert and audio chime the exact second the issue is created—zero polling required.
 
-### 🎮 Civic Gamification
+### <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Activities/Video%20Game.png" alt="Video Game" width="20" /> Civic Gamification
 We destroy the "bystander effect" through positive reinforcement. Users earn **Civic Points (XP)** for reporting issues, verifying others' reports, and contributing to resolutions. The real-time Leaderboard crowns the top civic heroes in the city.
 
-### 🛡️ Intelligent Duplicate Prevention
+### <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Shield.png" alt="Shield" width="20" /> Intelligent Duplicate Prevention
 Before an issue is submitted, the system cross-references GPS coordinates and AI embeddings against active complaints. If an identical issue exists nearby, the user is prompted to "Upvote" the existing issue rather than flooding the database with duplicates.
 
 ---
 
-## 🚀 Extreme Scalability & Architecture
-<img src="https://user-images.githubusercontent.com/74038190/219923809-b86dc415-a0c2-4a38-bc88-ad6cf06395a8.gif" width="150" align="right">
+## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Travel%20and%20places/Rocket.png" alt="Rocket" width="25" /> Extreme Scalability & Architecture
+
+<img src="https://user-images.githubusercontent.com/74038190/219923809-b86dc415-a0c2-4a38-bc88-ad6cf06395a8.gif" width="150" align="right" alt="Server Animation">
 
 LocalPulse is not just a prototype; it is engineered for production-level municipal scaling.
 
-### 1. The Stack
+### 1. 🏗️ The Stack
 - **Frontend:** React Native (Expo) ensures true cross-platform native compilation (iOS & Android) from a single, deeply modularized TypeScript codebase.
 - **Backend:** Supabase (PostgreSQL) powers the platform. We utilize raw SQL RPC functions (`ST_DWithin`) combined with PostGIS for hyper-fast radius queries across massive datasets.
 
-### 2. Why it Scales
+### 2. ⚡ Why it Scales
 - **Edge Computing & Caching:** We utilize aggressive asynchronous storage caching on the device. Data is only fetched when the user's geographic sector changes.
 - **WebSockets over REST:** Instead of heavy REST polling that crashes servers, LocalPulse maintains a lightweight WebSocket connection directly to Postgres. Changes to the database are streamed instantly to the client.
 - **Row Level Security (RLS):** Every single database request is cryptographically verified at the database level, ensuring user data is completely siloed and secure without requiring a middle-tier validation server.
 
-### 3. Data Flow
+### 3. 🔄 Data Flow
 ```mermaid
 graph TD
     A[Mobile App] -->|Auth & Live Websockets| B(Supabase PostgreSQL)
@@ -104,8 +116,9 @@ graph TD
 
 ---
 
-## 💻 Getting Started
-<img src="https://user-images.githubusercontent.com/74038190/212749168-86d6c7ab-98da-409b-998f-c5b74721badd.gif" width="150" align="right">
+## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Laptop.png" alt="Laptop" width="25" /> Getting Started
+
+<img src="https://user-images.githubusercontent.com/74038190/212749168-86d6c7ab-98da-409b-998f-c5b74721badd.gif" width="150" align="right" alt="Coding Animation">
 
 ### Prerequisites
 - Node.js (v18+)
@@ -139,15 +152,19 @@ graph TD
 
 ---
 
-## 📥 Download & Demo
+## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Objects/Inbox%20Tray.png" alt="Inbox Tray" width="25" /> Download & Demo
 
 - **Drive Submission:** [Project Files & Assets](https://drive.google.com/drive/folders/1XYEfJ4NUL0QXT_6RSESG382ISleoco7y?usp=drive_link)
 - **APK Download:** [Download LocalPulse APK](https://drive.google.com/file/d/1gnljj-1znySw1WRB_cp8xZcilts-iDoo/view?usp=drive_link)
 
 ---
 
-## 🙏 Acknowledgements
+## <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Smilies/Red%20Heart.png" alt="Red Heart" width="25" /> Acknowledgements
 
 Built with ❤️ by **Team Quantum Quotients** for **DevFusion 3.O | The Developers Hackathon**.
 
 We would like to extend our deepest gratitude to the **Indian Institute of Technology (IIT), Bombay** and the hackathon organizers for providing us with this amazing opportunity to build and showcase LocalPulse.
+
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=timeGradient&height=100&section=footer" />
+</p>
