@@ -9,6 +9,9 @@
     <a href="https://expo.dev/"><img src="https://img.shields.io/badge/Expo-1B1F23?style=for-the-badge&logo=expo&logoColor=white" alt="Expo"/></a>
     <a href="https://supabase.com/"><img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase"/></a>
     <a href="https://deepmind.google/technologies/gemini/"><img src="https://img.shields.io/badge/Google_Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Gemini AI"/></a>
+    <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"/></a>
+    <a href="https://postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL"/></a>
+    <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js"/></a>
   </p>
   
   <p align="center">
@@ -16,6 +19,16 @@
     <img src="https://img.shields.io/badge/Platform-iOS%20%7C%20Android-lightgrey.svg?style=flat-square" alt="Platform">
     <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square" alt="License">
     <img src="https://img.shields.io/badge/Hackathon-DevFusion_3.0-orange.svg?style=flat-square" alt="Hackathon">
+  </p>
+
+  <p align="center">
+    <a href="https://github.com/bhargavatejagolla/localpulse/stargazers"><img src="https://img.shields.io/github/stars/bhargavatejagolla/localpulse?style=social" alt="Stars"></a>
+    <a href="https://github.com/bhargavatejagolla/localpulse/network/members"><img src="https://img.shields.io/github/forks/bhargavatejagolla/localpulse?style=social" alt="Forks"></a>
+    <a href="https://github.com/bhargavatejagolla/localpulse/issues"><img src="https://img.shields.io/github/issues/bhargavatejagolla/localpulse" alt="Issues"></a>
+  </p>
+
+  <p align="center">
+    <code>#CivicTech</code> <code>#SmartCity</code> <code>#AI</code> <code>#Gamification</code> <code>#React-Native</code> <code>#Supabase</code> <code>#Gemini-AI</code> <code>#PostGIS</code>
   </p>
 
   *A next-generation civic engagement platform that empowers citizens to report, track, and resolve local issues in real-time, powered by AI and Gamification.*
